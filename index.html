@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time Off Request — Riverside Medical Supply</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --navy:#0f2137;--teal:#1a7f6e;--teal-light:#22a08f;--teal-bg:#e6f4f1;
+    --red:#b91c1c;--red-bg:#fee2e2;--green:#15803d;--green-bg:#dcfce7;
+    --amber:#d97706;--amber-bg:#fef3c7;--blue:#1d4ed8;--blue-bg:#dbeafe;
+    --gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;
+    --gray-400:#9ca3af;--gray-500:#6b7280;--gray-700:#374151;--gray-900:#111827;
+    --radius:10px;--shadow:0 2px 8px rgba(0,0,0,.08);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--gray-100);color:var(--gray-900);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:1.5rem 1rem 3rem;}
+
+  .logo-bar{width:100%;max-width:500px;display:flex;align-items:center;gap:10px;margin-bottom:1.5rem;}
+  .logo{width:36px;height:36px;background:var(--navy);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;color:white;flex-shrink:0;}
+  .logo-text{font-size:14px;font-weight:600;color:var(--gray-700);}
+  .logo-sub{font-size:12px;color:var(--gray-400);}
+
+  .card{background:white;border-radius:14px;padding:1.5rem;width:100%;max-width:500px;box-shadow:var(--shadow);}
+  .card-title{font-size:18px;font-weight:700;margin-bottom:4px;}
+  .card-sub{font-size:13px;color:var(--gray-500);margin-bottom:1.5rem;}
+
+  .step{display:none;} .step.active{display:block;}
+  .step-dots{display:flex;gap:6px;margin-bottom:1.25rem;}
+  .step-dot{flex:1;height:3px;border-radius:2px;background:var(--gray-200);transition:background .2s;}
+  .step-dot.done{background:var(--teal);}
+  .step-dot.active{background:var(--navy);}
+
+  .field{margin-bottom:1rem;}
+  .field label{display:block;font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;}
+  .field input,.field select,.field textarea{width:100%;border:1.5px solid var(--gray-200);border-radius:var(--radius);padding:10px 12px;font-size:15px;color:var(--gray-900);background:white;outline:none;transition:border-color .15s;font-family:inherit;}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(26,127,110,.1);}
+  .field textarea{resize:vertical;min-height:72px;}
+
+  /* PIN */
+  .pin-row{display:flex;gap:8px;justify-content:center;margin:1rem 0;}
+  .pin-digit{width:48px;height:56px;border:1.5px solid var(--gray-200);border-radius:10px;font-size:22px;font-weight:700;text-align:center;outline:none;transition:border-color .15s;}
+  .pin-digit:focus{border-color:var(--teal);box-shadow:0 0 0 3px rgba(26,127,110,.1);}
+  .pin-digit.filled{border-color:var(--gray-400);}
+
+  /* TYPE SELECTOR */
+  .type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;}
+  .type-card{border:1.5px solid var(--gray-200);border-radius:var(--radius);padding:.875rem;text-align:center;cursor:pointer;transition:all .15s;}
+  .type-card:hover{border-color:var(--teal-light);}
+  .type-card.selected.sick{border-color:#16a34a;background:#f0fdf4;}
+  .type-card.selected.vacation{border-color:var(--blue);background:var(--blue-bg);}
+  .type-card.selected.unpaid_excused{border-color:var(--amber);background:var(--amber-bg);}
+  .type-card .tc-icon{font-size:22px;margin-bottom:5px;}
+  .type-card .tc-name{font-size:13px;font-weight:700;color:var(--gray-700);}
+  .type-card .tc-desc{font-size:11px;color:var(--gray-400);margin-top:2px;}
+
+  /* BANK SPLIT */
+  .bank-split{background:var(--gray-100);border-radius:var(--radius);padding:12px;margin-bottom:1rem;}
+  .bank-split-title{font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;}
+  .bank-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+  .bank-row:last-child{margin-bottom:0;}
+  .bank-row label{font-size:13px;font-weight:600;flex:1;}
+  .bank-row input[type=number]{width:90px;border:1.5px solid var(--gray-200);border-radius:6px;padding:6px 8px;font-size:14px;outline:none;text-align:right;}
+  .bank-row input[type=number]:focus{border-color:var(--teal);}
+  .bank-row .bal{font-size:11px;color:var(--gray-400);white-space:nowrap;}
+  .bank-total{display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--gray-200);margin-top:8px;font-size:13px;font-weight:700;}
+  .bank-total.ok{color:var(--green);}
+  .bank-total.over{color:var(--red);}
+  .bank-total.under{color:var(--amber);}
+
+  /* PARTIAL DAY */
+  .partial-section{display:none;background:#eff6ff;border:1px solid #bfdbfe;border-radius:var(--radius);padding:12px;margin-bottom:1rem;}
+  .partial-section.show{display:block;}
+
+  /* DATE ROW */
+  .date-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .days-badge{background:var(--teal-bg);color:var(--teal);border-radius:8px;padding:10px 14px;font-size:13px;font-weight:600;text-align:center;margin-bottom:1rem;}
+  .notice-warn{background:var(--amber-bg);border:1px solid #fcd34d;border-radius:8px;padding:10px 14px;font-size:13px;color:#92400e;margin-bottom:1rem;display:none;}
+  .notice-warn.show{display:block;}
+
+  /* BALANCE BOX */
+  .bal-box{background:var(--teal-bg);border:1px solid #99d6c8;border-radius:10px;padding:12px 14px;margin-bottom:1rem;}
+  .bal-row{display:flex;justify-content:space-between;font-size:13px;padding:2px 0;}
+  .bal-lbl{color:var(--gray-500);}
+  .bal-val{font-weight:700;color:var(--teal);}
+  .bal-val.low{color:var(--amber);}
+  .bal-val.empty{color:var(--red);}
+
+  /* BUTTONS */
+  .btn{width:100%;height:48px;border:none;border-radius:var(--radius);font-size:15px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;}
+  .btn-primary{background:var(--teal);color:white;} .btn-primary:hover{background:var(--teal-light);}
+  .btn-secondary{background:var(--gray-100);color:var(--gray-700);margin-top:8px;} .btn-secondary:hover{background:var(--gray-200);}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  .err{background:var(--red-bg);border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:1rem;display:none;}
+  .err.show{display:block;}
+
+  /* SUCCESS */
+  .success-card{text-align:center;padding:1rem 0;}
+  .success-icon{font-size:52px;margin-bottom:12px;}
+  .success-title{font-size:20px;font-weight:700;margin-bottom:6px;}
+  .success-sub{font-size:14px;color:var(--gray-500);}
+  .summary-box{background:var(--gray-100);border-radius:var(--radius);padding:12px 14px;margin:1rem 0;text-align:left;}
+  .summary-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;}
+  .summary-row span:first-child{color:var(--gray-500);}
+  .summary-row span:last-child{font-weight:600;}
+
+  .spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .policy-note{font-size:12px;color:var(--gray-400);text-align:center;margin-top:1rem;line-height:1.5;max-width:500px;}
+</style>
+</head>
+<body>
+
+<div class="logo-bar">
+  <div class="logo">RMS</div>
+  <div>
+    <div class="logo-text">Riverside Medical Supply</div>
+    <div class="logo-sub">Time Off Request</div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="step-dots">
+    <div class="step-dot active" id="dot-1"></div>
+    <div class="step-dot" id="dot-2"></div>
+    <div class="step-dot" id="dot-3"></div>
+  </div>
+
+  <!-- STEP 1: Identity -->
+  <div class="step active" id="step-1">
+    <div class="card-title">Who are you?</div>
+    <div class="card-sub">Enter your last name and 6-digit birthday PIN (MMDDYY).</div>
+    <div id="err-1" class="err"></div>
+    <div class="field">
+      <label>Last name</label>
+      <input type="text" id="emp-lastname" placeholder="e.g. Smith" autocomplete="family-name">
+    </div>
+    <div class="field">
+      <label>Birthday PIN (MMDDYY)</label>
+      <div class="pin-row">
+        <input class="pin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit" maxlength="1" type="tel" inputmode="numeric">
+      </div>
+      <div style="font-size:12px;color:var(--gray-400);text-align:center;margin-top:4px;">Jan 5, 1990 → 010590</div>
+    </div>
+    <button class="btn btn-primary" onclick="verifyIdentity()" id="btn-verify">Verify identity →</button>
+  </div>
+
+  <!-- STEP 2: Request details -->
+  <div class="step" id="step-2">
+    <div class="card-title">Request time off</div>
+    <div class="card-sub" id="step2-greeting"></div>
+    <div id="err-2" class="err"></div>
+    <div id="bal-display" class="bal-box" style="display:none;"></div>
+
+    <!-- Type selection -->
+    <div class="field">
+      <label>Type of time off</label>
+      <div class="type-grid" id="type-grid">
+        <div class="type-card sick" id="type-sick" onclick="selectType('sick')">
+          <div class="tc-icon">🤒</div>
+          <div class="tc-name">Sick time</div>
+          <div class="tc-desc">Illness, injury, medical</div>
+        </div>
+        <div class="type-card vacation" id="type-vacation" onclick="selectType('vacation')">
+          <div class="tc-icon">✈️</div>
+          <div class="tc-name">Vacation</div>
+          <div class="tc-desc">Planned time off</div>
+        </div>
+        <div class="type-card" id="type-mixed" onclick="selectType('mixed')" style="grid-column:1/-1;">
+          <div class="tc-icon">🔀</div>
+          <div class="tc-name">Split banks</div>
+          <div class="tc-desc">Use both sick and vacation to cover one absence</div>
+        </div>
+        <div class="type-card unpaid_excused" id="type-unpaid_excused" onclick="selectType('unpaid_excused')" style="grid-column:1/-1;">
+          <div class="tc-icon">📋</div>
+          <div class="tc-name">Unpaid excused</div>
+          <div class="tc-desc">No PTO available — company discretion</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Date range -->
+    <div class="field">
+      <label>Dates</label>
+      <div class="date-row">
+        <div><label style="font-size:11px;color:var(--gray-400);">Start</label><input type="date" id="start-date" onchange="onDatesChange()"></div>
+        <div><label style="font-size:11px;color:var(--gray-400);">End</label><input type="date" id="end-date" onchange="onDatesChange()"></div>
+      </div>
+    </div>
+
+    <!-- Partial day -->
+    <div class="field">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="is-partial" onchange="togglePartial()" style="width:auto;"> Partial day (less than 8 hours)
+      </label>
+    </div>
+
+    <div id="partial-section" class="partial-section">
+      <div class="field" style="margin-bottom:8px;">
+        <label>How many hours?</label>
+        <input type="number" id="partial-hours" placeholder="e.g. 3.5" step="0.5" min="0.5" max="7.5" onchange="onDatesChange()">
+      </div>
+      <div class="field" style="margin-bottom:8px;">
+        <label>Reason</label>
+        <select id="partial-reason">
+          <option value="late_arrival">Late arrival</option>
+          <option value="early_leave">Early leave</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Details</label>
+        <input type="text" id="partial-detail" placeholder="e.g. doctor appointment at 2pm, leaving early">
+      </div>
+    </div>
+
+    <!-- Days display -->
+    <div id="days-display" class="days-badge" style="display:none;"></div>
+    <div id="notice-warn" class="notice-warn"></div>
+
+    <!-- Bank split (shown for mixed type) -->
+    <div id="bank-split-section" class="bank-split" style="display:none;">
+      <div class="bank-split-title">Split hours between banks</div>
+      <div class="bank-row">
+        <label>🤒 Sick time</label>
+        <input type="number" id="split-sick" placeholder="0" step="0.5" min="0" oninput="updateSplitTotal()">
+        <span class="bal" id="split-sick-bal"></span>
+      </div>
+      <div class="bank-row">
+        <label>✈️ Vacation</label>
+        <input type="number" id="split-vac" placeholder="0" step="0.5" min="0" oninput="updateSplitTotal()">
+        <span class="bal" id="split-vac-bal"></span>
+      </div>
+      <div id="split-total" class="bank-total"></div>
+    </div>
+
+    <div class="field">
+      <label>Notes <span style="font-weight:400;text-transform:none;">(optional)</span></label>
+      <textarea id="req-notes" placeholder="Any details your manager should know..."></textarea>
+    </div>
+
+    <button class="btn btn-primary" onclick="goToReview()">Review request →</button>
+    <button class="btn btn-secondary" onclick="goStep(1)">← Back</button>
+  </div>
+
+  <!-- STEP 3: Review & submit -->
+  <div class="step" id="step-3">
+    <div class="card-title">Review &amp; submit</div>
+    <div class="card-sub">Check the details below, then submit your request.</div>
+    <div id="err-3" class="err"></div>
+    <div id="review-summary"></div>
+    <button class="btn btn-primary" onclick="submitRequest()" id="btn-submit">Submit request</button>
+    <button class="btn btn-secondary" onclick="goStep(2)">← Edit</button>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="step" id="step-success">
+    <div class="success-card">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Request submitted!</div>
+      <div class="success-sub">Your manager will review it and let you know.</div>
+      <div id="success-summary" class="summary-box" style="margin-top:1.25rem;"></div>
+      <button class="btn btn-secondary" onclick="startOver()" style="margin-top:1rem;">Submit another request</button>
+    </div>
+  </div>
+</div>
+
+<div class="policy-note">
+  Vacation requires 14 days advance notice to be auto-approved. Sick time can be used same-day. Questions? See your manager.
+</div>
+
+<script>
+const db = supabase.createClient(RMS_CONFIG.supabase_url, RMS_CONFIG.supabase_anon_key);
+let currentEmployee = null;
+let selectedType = null;
+
+// ── PIN WIRING ────────────────────────────────────────────────
+document.querySelectorAll('.pin-digit').forEach((inp,i,all)=>{
+  inp.addEventListener('input',e=>{
+    const v=e.target.value.replace(/\D/g,'');
+    e.target.value=v.slice(-1);
+    if(v&&i<all.length-1)all[i+1].focus();
+    e.target.classList.toggle('filled',!!v);
+  });
+  inp.addEventListener('keydown',e=>{
+    if(e.key==='Backspace'&&!e.target.value&&i>0){all[i-1].focus();all[i-1].value='';all[i-1].classList.remove('filled');}
+  });
+  inp.addEventListener('paste',e=>{
+    e.preventDefault();
+    const p=(e.clipboardData.getData('text')||'').replace(/\D/g,'').slice(0,6);
+    [...p].forEach((c,j)=>{if(all[j]){all[j].value=c;all[j].classList.add('filled');}});
+    if(all[Math.min(p.length,5)])all[Math.min(p.length,5)].focus();
+  });
+});
+function getPin(){return[...document.querySelectorAll('.pin-digit')].map(d=>d.value).join('');}
+
+// ── NAVIGATION ────────────────────────────────────────────────
+function goStep(n){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('step-'+n).classList.add('active');
+  document.querySelectorAll('.step-dot').forEach((d,i)=>{
+    d.classList.remove('active','done');
+    if(i+1<n)d.classList.add('done');
+    else if(i+1===n)d.classList.add('active');
+  });
+  window.scrollTo(0,0);
+}
+function showStep(id){document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
+function showErr(n,msg){const el=document.getElementById('err-'+n);el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),6000);}
+
+// ── STEP 1: VERIFY ────────────────────────────────────────────
+async function verifyIdentity(){
+  const lastName=document.getElementById('emp-lastname').value.trim();
+  const pin=getPin();
+  if(!lastName){showErr(1,'Please enter your last name.');return;}
+  if(pin.length!==6){showErr(1,'Please enter your full 6-digit birthday PIN.');return;}
+  const btn=document.getElementById('btn-verify');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Checking...';
+  try{
+    const{data,error}=await db.from('employees')
+      .select('id,name,last_name,birthday,employment_type,sick_bank_start,vacation_bank_start,sick_used,vacation_used')
+      .eq('active',true).eq('birthday',pin).ilike('last_name',lastName);
+    if(error)throw error;
+    const match=(data||[]).find(e=>(e.last_name||'').toLowerCase()===lastName.toLowerCase());
+    if(!match){showErr(1,'No match found. Check your last name and PIN. Your PIN is your birthday in MMDDYY format.');return;}
+    currentEmployee=match;
+    setupStep2();goStep(2);
+  }catch(e){showErr(1,'Connection error. Please try again.');console.error(e);}
+  finally{btn.disabled=false;btn.innerHTML='Verify identity →';}
+}
+
+// ── STEP 2: SETUP ─────────────────────────────────────────────
+function setupStep2(){
+  const firstName=currentEmployee.name.split(' ')[0];
+  document.getElementById('step2-greeting').textContent=`Hi ${firstName}! Fill out your time off request below.`;
+  const sickRem=currentEmployee.sick_bank_start-currentEmployee.sick_used;
+  const vacRem=currentEmployee.vacation_bank_start-currentEmployee.vacation_used;
+  const balEl=document.getElementById('bal-display');
+  if(currentEmployee.sick_bank_start>0||currentEmployee.vacation_bank_start>0){
+    balEl.innerHTML=`
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--gray-500);margin-bottom:6px;">Your PTO balances</div>
+      <div class="bal-row"><span class="bal-lbl">🤒 Sick remaining</span><span class="bal-val ${sickRem<=0?'empty':sickRem<8?'low':''}">${sickRem.toFixed(1)}h</span></div>
+      <div class="bal-row"><span class="bal-lbl">✈️ Vacation remaining</span><span class="bal-val ${vacRem<=0?'empty':vacRem<8?'low':''}">${vacRem.toFixed(1)}h</span></div>`;
+    balEl.style.display='block';
+  }
+  document.getElementById('split-sick-bal').textContent=`(${sickRem.toFixed(1)}h avail)`;
+  document.getElementById('split-vac-bal').textContent=`(${vacRem.toFixed(1)}h avail)`;
+  const today=new Date().toISOString().slice(0,10);
+  document.getElementById('start-date').min=today;
+  document.getElementById('end-date').min=today;
+}
+
+function selectType(type){
+  selectedType=type;
+  document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('type-'+type)?.classList.add('selected');
+  document.getElementById('bank-split-section').style.display=type==='mixed'?'block':'none';
+  onDatesChange();
+}
+
+function togglePartial(){
+  const isPartial=document.getElementById('is-partial').checked;
+  document.getElementById('partial-section').classList.toggle('show',isPartial);
+  // force single day when partial
+  if(isPartial){
+    const start=document.getElementById('start-date').value;
+    if(start)document.getElementById('end-date').value=start;
+    document.getElementById('end-date').disabled=true;
+  }else{
+    document.getElementById('end-date').disabled=false;
+  }
+  onDatesChange();
+}
+
+function countWorkdays(start,end){
+  let count=0,d=new Date(start+'T12:00:00'),e=new Date(end+'T12:00:00');
+  while(d<=e){const dow=d.getDay();if(dow>0&&dow<6)count++;d.setDate(d.getDate()+1);}
+  return count;
+}
+
+function onDatesChange(){
+  const start=document.getElementById('start-date').value;
+  let end=document.getElementById('end-date').value;
+  const isPartial=document.getElementById('is-partial').checked;
+  const dispEl=document.getElementById('days-display');
+  const warnEl=document.getElementById('notice-warn');
+  if(!start||!end){dispEl.style.display='none';return;}
+  if(isPartial)end=start;
+  if(end<start){document.getElementById('end-date').value=start;end=start;}
+
+  let totalHours;
+  if(isPartial){
+    const ph=parseFloat(document.getElementById('partial-hours').value)||0;
+    totalHours=ph;
+    dispEl.textContent=`${ph}h partial day`;
+  }else{
+    const days=countWorkdays(start,end);
+    totalHours=days*8;
+    dispEl.textContent=`${days} workday${days!==1?'s':''} · ${totalHours}h`;
+  }
+  dispEl.style.display=totalHours>0?'block':'none';
+
+  // Vacation notice check
+  if(selectedType==='vacation'||selectedType==='mixed'){
+    const noticeDays=Math.round((new Date(start+'T12:00:00')-new Date())/86400000);
+    if(noticeDays<RMS_CONFIG.vacation_notice_days){
+      warnEl.innerHTML=`⚠️ <strong>Short notice:</strong> This starts in ${noticeDays} day${noticeDays!==1?'s':''}. Policy requires ${RMS_CONFIG.vacation_notice_days} days advance notice. Your request will need manager approval.`;
+      warnEl.classList.add('show');
+    }else warnEl.classList.remove('show');
+  }else warnEl.classList.remove('show');
+
+  // Update split total
+  if(selectedType==='mixed')updateSplitTotal();
+}
+
+function updateSplitTotal(){
+  const sick=parseFloat(document.getElementById('split-sick').value)||0;
+  const vac=parseFloat(document.getElementById('split-vac').value)||0;
+  const isPartial=document.getElementById('is-partial').checked;
+  const ph=parseFloat(document.getElementById('partial-hours').value)||0;
+  const start=document.getElementById('start-date').value;
+  const end=document.getElementById('end-date').value;
+  let target=0;
+  if(isPartial)target=ph;
+  else if(start&&end)target=countWorkdays(start,end)*8;
+  const total=sick+vac;
+  const el=document.getElementById('split-total');
+  const diff=total-target;
+  let cls='ok',msg=`Total: ${total}h / ${target}h needed`;
+  if(Math.abs(diff)>0.01){
+    cls=diff>0?'over':'under';
+    msg+=diff>0?` (${diff.toFixed(1)}h over)`:`(${Math.abs(diff).toFixed(1)}h short)`;
+  }
+  el.className='bank-total '+cls;
+  el.innerHTML=`<span>${msg}</span>`;
+}
+
+// ── STEP 3: REVIEW ────────────────────────────────────────────
+function goToReview(){
+  if(!selectedType){showErr(2,'Please select a type of time off.');return;}
+  const start=document.getElementById('start-date').value;
+  const end=document.getElementById('end-date').value;
+  const isPartial=document.getElementById('is-partial').checked;
+  if(!start||!end){showErr(2,'Please select dates.');return;}
+
+  const ph=parseFloat(document.getElementById('partial-hours').value)||0;
+  if(isPartial&&ph<=0){showErr(2,'Please enter how many hours for the partial day.');return;}
+  if(isPartial&&!document.getElementById('partial-detail').value.trim()){showErr(2,'Please add details for the partial day request.');return;}
+
+  const totalHours=isPartial?ph:countWorkdays(start,end)*8;
+  const sickHrs=selectedType==='sick'?totalHours:selectedType==='mixed'?(parseFloat(document.getElementById('split-sick').value)||0):0;
+  const vacHrs=selectedType==='vacation'?totalHours:selectedType==='mixed'?(parseFloat(document.getElementById('split-vac').value)||0):0;
+  const unpaidHrs=selectedType==='unpaid_excused'?totalHours:0;
+  const sickRem=currentEmployee.sick_bank_start-currentEmployee.sick_used;
+  const vacRem=currentEmployee.vacation_bank_start-currentEmployee.vacation_used;
+
+  // Balance checks
+  if(sickHrs>sickRem){showErr(2,`You only have ${sickRem.toFixed(1)}h sick time remaining but need ${sickHrs}h.`);return;}
+  if(vacHrs>vacRem){showErr(2,`You only have ${vacRem.toFixed(1)}h vacation remaining but need ${vacHrs}h.`);return;}
+  if(selectedType==='mixed'&&Math.abs(sickHrs+vacHrs-totalHours)>0.01){showErr(2,'Split hours must add up to the total hours needed.');return;}
+
+  const fmtD=d=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+  const noticeDays=selectedType==='vacation'||selectedType==='mixed'?Math.round((new Date(start+'T12:00:00')-new Date())/86400000):null;
+  const needsApproval=noticeDays!==null&&noticeDays<RMS_CONFIG.vacation_notice_days;
+
+  let bankLine='';
+  if(selectedType==='sick')bankLine='🤒 Sick time';
+  else if(selectedType==='vacation')bankLine='✈️ Vacation';
+  else if(selectedType==='mixed')bankLine=`🔀 Split: ${sickHrs}h sick + ${vacHrs}h vacation`;
+  else bankLine='📋 Unpaid excused';
+
+  document.getElementById('review-summary').innerHTML=`
+    <div class="summary-box">
+      <div class="summary-row"><span>Employee</span><span>${currentEmployee.name}</span></div>
+      <div class="summary-row"><span>Type</span><span>${bankLine}</span></div>
+      <div class="summary-row"><span>${isPartial?'Date':'Start'}</span><span>${fmtD(start)}</span></div>
+      ${!isPartial?`<div class="summary-row"><span>End</span><span>${fmtD(end)}</span></div>`:''}
+      <div class="summary-row"><span>Total</span><span>${totalHours}h${isPartial?' (partial day)':''}</span></div>
+      ${isPartial?`<div class="summary-row"><span>Reason</span><span>${document.getElementById('partial-detail').value}</span></div>`:''}
+      ${document.getElementById('req-notes').value?`<div class="summary-row"><span>Notes</span><span style="max-width:200px;text-align:right;">${document.getElementById('req-notes').value}</span></div>`:''}
+      ${needsApproval?`<div style="margin-top:8px;padding:8px;background:var(--amber-bg);border-radius:6px;font-size:12px;color:#92400e;">⚠️ Short notice — requires manager approval</div>`:''}
+    </div>`;
+  goStep(3);
+}
+
+// ── SUBMIT ────────────────────────────────────────────────────
+async function submitRequest(){
+  const btn=document.getElementById('btn-submit');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Submitting...';
+
+  const start=document.getElementById('start-date').value;
+  const end=document.getElementById('end-date').value;
+  const isPartial=document.getElementById('is-partial').checked;
+  const ph=parseFloat(document.getElementById('partial-hours').value)||0;
+  const totalHours=isPartial?ph:countWorkdays(start,end)*8;
+  const totalDays=isPartial?ph/8:countWorkdays(start,end);
+  const sickHrs=selectedType==='sick'?totalHours:selectedType==='mixed'?(parseFloat(document.getElementById('split-sick').value)||0):0;
+  const vacHrs=selectedType==='vacation'?totalHours:selectedType==='mixed'?(parseFloat(document.getElementById('split-vac').value)||0):0;
+  const unpaidHrs=selectedType==='unpaid_excused'?totalHours:0;
+  const noticeDays=selectedType==='vacation'||selectedType==='mixed'?Math.round((new Date(start+'T12:00:00')-new Date())/86400000):null;
+  const needsApproval=noticeDays!==null&&noticeDays<RMS_CONFIG.vacation_notice_days;
+
+  try{
+    const{error}=await db.from('pto_requests').insert({
+      employee_id:currentEmployee.id,
+      employee_name:currentEmployee.name,
+      request_type:selectedType==='unpaid_excused'?'unpaid_excused':selectedType,
+      start_date:start,
+      end_date:end,
+      total_days:totalDays,
+      total_hours:totalHours,
+      sick_hours:sickHrs,
+      vacation_hours:vacHrs,
+      unpaid_excused_hours:unpaidHrs,
+      partial_day:isPartial,
+      partial_reason:isPartial?document.getElementById('partial-reason').value:null,
+      partial_detail:isPartial?document.getElementById('partial-detail').value:null,
+      notes:document.getElementById('req-notes').value||null,
+      status:'pending',
+      notice_days:noticeDays,
+      requires_approval:needsApproval,
+    });
+    if(error)throw error;
+
+    // Formspree notification
+    if(RMS_CONFIG.formspree_endpoint&&!RMS_CONFIG.formspree_endpoint.includes('YOUR_')){
+      await fetch(RMS_CONFIG.formspree_endpoint,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify({
+          subject:`New Time Off Request — ${currentEmployee.name}`,
+          employee:currentEmployee.name,
+          type:selectedType,
+          start_date:start,end_date:end,
+          total_hours:totalHours,
+          sick_hours:sickHrs,vacation_hours:vacHrs,
+          partial_day:isPartial?'Yes':'No',
+          notice_days:noticeDays||'N/A',
+          requires_approval:needsApproval?'YES':'No',
+          notes:document.getElementById('req-notes').value||'(none)',
+          submitted_at:new Date().toLocaleString(),
+        })
+      });
+    }
+
+    const fmtD=d=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    document.getElementById('success-summary').innerHTML=`
+      <div class="summary-row"><span>Type</span><span>${selectedType==='sick'?'🤒 Sick':selectedType==='vacation'?'✈️ Vacation':selectedType==='mixed'?'🔀 Split banks':'📋 Unpaid excused'}</span></div>
+      <div class="summary-row"><span>Dates</span><span>${fmtD(start)}${start!==end?' – '+fmtD(end):''}</span></div>
+      <div class="summary-row"><span>Total</span><span>${totalHours}h${isPartial?' (partial)':''}</span></div>`;
+    showStep('step-success');
+  }catch(e){
+    showErr(3,'Something went wrong. Please try again or see your manager.');
+    btn.disabled=false;btn.innerHTML='Submit request';
+  }
+}
+
+function startOver(){
+  currentEmployee=null;selectedType=null;
+  document.getElementById('emp-lastname').value='';
+  document.querySelectorAll('.pin-digit').forEach(d=>{d.value='';d.classList.remove('filled');});
+  document.getElementById('start-date').value='';
+  document.getElementById('end-date').value='';
+  document.getElementById('end-date').disabled=false;
+  document.getElementById('req-notes').value='';
+  document.getElementById('is-partial').checked=false;
+  document.getElementById('partial-section').classList.remove('show');
+  document.getElementById('partial-hours').value='';
+  document.getElementById('partial-detail').value='';
+  document.getElementById('split-sick').value='';
+  document.getElementById('split-vac').value='';
+  document.getElementById('bank-split-section').style.display='none';
+  document.getElementById('days-display').style.display='none';
+  document.getElementById('notice-warn').classList.remove('show');
+  document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('selected'));
+  goStep(1);
+}
+
+document.getElementById('emp-lastname').addEventListener('keydown',e=>{if(e.key==='Enter')document.querySelectorAll('.pin-digit')[0].focus();});
+</script>
+</body>
+</html>
