@@ -1,0 +1,2947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Manager Dashboard — RMS Payroll</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --navy:#0a1f5c;--navy-mid:#1a3578;--navy-light:#2a4a9a;
+  --steel:#b8cce4;--steel-light:#dce8f5;--steel-bg:#f0f5fb;
+  --red:#b91c1c;--red-bg:#fee2e2;--green:#15803d;--green-bg:#dcfce7;
+  --amber:#b45309;--amber-bg:#fef3c7;
+  --gray-50:#f7f9fc;--gray-100:#f0f4f9;--gray-200:#e2e8f0;--gray-300:#c8d3e1;
+  --gray-400:#8896a8;--gray-500:#5a6a7e;--gray-700:#2d3a4a;--gray-900:#0d1117;
+  --radius:8px;--shadow:0 1px 4px rgba(10,31,92,.08);--shadow-md:0 4px 12px rgba(10,31,92,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif;background:var(--steel-bg);color:var(--gray-900);font-size:14px;}
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem;background:var(--navy);background-image:radial-gradient(ellipse at 30% 60%,rgba(42,74,154,.5) 0%,transparent 60%);}
+.login-card{background:white;border-radius:14px;padding:2.25rem;width:100%;max-width:390px;box-shadow:0 24px 48px rgba(10,31,92,.35);}
+.login-logo-wrap{text-align:center;margin-bottom:1.5rem;}
+.login-logo-wrap img{height:52px;width:auto;}
+.login-divider{width:48px;height:2px;background:var(--steel-light);margin:.875rem auto;}
+.login-title{font-size:17px;font-weight:700;color:var(--navy);text-align:center;margin-bottom:3px;}
+.login-sub{font-size:12px;color:var(--gray-500);text-align:center;margin-bottom:1.5rem;}
+.login-field{text-align:left;margin-bottom:1rem;}
+.login-field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-500);margin-bottom:5px;}
+.login-field input{width:100%;border:1.5px solid var(--gray-300);border-radius:var(--radius);padding:10px 12px;font-size:14px;outline:none;transition:border-color .15s;font-family:inherit;color:var(--gray-900);}
+.login-field input:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(26,53,120,.12);}
+.login-err{background:var(--red-bg);border:1px solid #fca5a5;border-radius:6px;padding:8px 12px;font-size:13px;color:var(--red);margin-bottom:1rem;display:none;}
+.login-err.show{display:block;}
+.btn-login{width:100%;height:46px;background:var(--navy);color:white;border:none;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;letter-spacing:.03em;transition:background .15s;}
+.btn-login:hover{background:var(--navy-mid);}
+.app-header{background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:62px;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(10,31,92,.3);}
+.brand{display:flex;align-items:center;gap:14px;}
+.brand img{height:38px;width:auto;}
+.brand-divider{width:1px;height:26px;background:rgba(255,255,255,.2);}
+.brand-name{color:rgba(255,255,255,.8);font-size:12px;font-weight:500;letter-spacing:.03em;}
+.hbtn{color:rgba(255,255,255,.6);font-size:12px;padding:5px 11px;border-radius:5px;border:1px solid rgba(255,255,255,.2);background:none;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;margin-left:6px;transition:all .15s;}
+.hbtn:hover{background:rgba(255,255,255,.1);color:white;}
+.app-nav{background:white;border-bottom:2px solid var(--gray-200);padding:0 1.5rem;display:flex;align-items:center;overflow-x:auto;}
+.app-nav::-webkit-scrollbar{height:0;}
+.nav-btn{padding:12px 14px;font-size:13px;font-weight:500;color:var(--gray-500);border:none;background:transparent;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:color .15s,border-color .15s;display:inline-flex;align-items:center;gap:6px;}
+.nav-btn:hover{color:var(--navy);}
+.nav-btn.active{color:var(--navy);border-bottom-color:var(--navy);font-weight:600;}
+.nav-icon{font-size:13px;opacity:.65;line-height:1;position:relative;top:-.5px;}
+.nav-btn.active .nav-icon,.nav-btn:hover .nav-icon{opacity:1;}
+.nav-divider{width:1px;align-self:stretch;background:var(--gray-200);margin:10px 6px;flex-shrink:0;}
+.nav-badge{display:inline-block;background:var(--red);color:white;font-size:10px;font-weight:700;border-radius:10px;padding:1px 5px;margin-left:2px;vertical-align:middle;}
+.nav-badge.amber{background:var(--amber);}
+.app-main{max-width:1280px;margin:0 auto;padding:1.75rem 1.5rem 5rem;}
+.pane{display:none;}.pane.active{display:block;}
+.section-header{margin-bottom:1.25rem;}
+.section-header h2{font-size:17px;font-weight:700;color:var(--navy);letter-spacing:-.01em;}
+.section-header p{font-size:13px;color:var(--gray-500);margin-top:3px;}
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem;}
+.kpi{background:white;border:1px solid var(--gray-200);border-radius:10px;padding:.9rem 1rem;box-shadow:var(--shadow);}
+.kpi-val{font-size:22px;font-weight:700;line-height:1.1;color:var(--navy);}
+.kpi-lbl{font-size:11px;color:var(--gray-500);margin-top:3px;font-weight:500;}
+.kpi.danger{border-left:3px solid var(--red);}.kpi.danger .kpi-val{color:var(--red);}
+.kpi.warn{border-left:3px solid var(--amber);}.kpi.warn .kpi-val{color:var(--amber);}
+.kpi.success{border-left:3px solid var(--green);}.kpi.success .kpi-val{color:var(--green);}
+.kpi.info{border-left:3px solid var(--navy-light);}.kpi.info .kpi-val{color:var(--navy);}
+.card{background:white;border:1px solid var(--gray-200);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);margin-bottom:1.25rem;}
+.card-title{padding:11px 14px;border-bottom:1px solid var(--gray-200);font-size:13px;font-weight:600;color:var(--navy);display:flex;align-items:center;justify-content:space-between;gap:8px;background:var(--gray-50);}
+.overflow-x{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:500px;}
+thead th{padding:9px 11px;text-align:left;background:var(--navy);color:rgba(255,255,255,.85);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;}
+thead th.right{text-align:right;}
+thead th.sortable{cursor:pointer;}thead th.sortable:hover{color:white;}
+tbody tr{border-bottom:1px solid var(--gray-100);transition:background .1s;}
+tbody tr:nth-child(even){background:var(--gray-50);}
+tbody tr:hover{background:var(--steel-bg);}
+tbody tr:last-child{border-bottom:none;}
+td{padding:10px 11px;vertical-align:middle;font-size:13px;}
+td.right{text-align:right;}
+td.mono{font-variant-numeric:tabular-nums;font-size:12px;font-family:'Courier New',monospace;}
+.emp-name{font-weight:600;color:var(--navy);}.emp-id{font-size:11px;color:var(--gray-400);}
+.sort-arrow{font-size:10px;color:var(--steel);}
+/* Highlight "left" / remaining-balance columns so the eye lands on the number that matters */
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px;white-space:nowrap;margin:1px;letter-spacing:.02em;}
+.badge.pending{background:var(--amber-bg);color:var(--amber);}
+.badge.approved{background:var(--green-bg);color:var(--green);}
+.badge.denied{background:var(--red-bg);color:var(--red);}
+.badge.sick{background:#f0fdf4;color:#166534;border:1px solid #bbf7d0;}
+.badge.vacation{background:var(--steel-bg);color:var(--navy-light);border:1px solid var(--steel-light);}
+.badge.mixed{background:#f5f3ff;color:#5b21b6;border:1px solid #ddd6fe;}
+.badge.unpaid_excused{background:var(--amber-bg);color:var(--amber);border:1px solid #fcd34d;}
+.badge.unexcused{background:var(--red-bg);color:var(--red);}
+.badge.hol{background:var(--green-bg);color:var(--green);}
+.badge.salaried{background:var(--gray-100);color:var(--gray-500);}
+.badge.terminated{background:var(--red-bg);color:var(--red);}
+.badge.retainer{background:var(--steel-bg);color:var(--navy-mid);border:1px solid var(--steel-light);}
+.badge.overridden{background:#fff7ed;color:#c2410c;border:1px solid #fed7aa;}
+.btn-primary{height:36px;padding:0 16px;background:var(--navy);color:white;border:none;border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:5px;letter-spacing:.02em;transition:background .15s;}
+.btn-primary:hover{background:var(--navy-mid);}
+.btn-secondary{height:34px;padding:0 12px;background:white;color:var(--gray-700);border:1px solid var(--gray-300);border-radius:var(--radius);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:5px;transition:all .15s;}
+.btn-secondary:hover{background:var(--gray-100);border-color:var(--gray-400);}
+.btn-sm{height:28px;padding:0 10px;background:white;color:var(--gray-700);border:1px solid var(--gray-300);border-radius:5px;font-size:12px;cursor:pointer;transition:all .15s;}
+.btn-sm:hover{background:var(--gray-50);border-color:var(--navy-light);color:var(--navy);}
+.btn-approve{height:28px;padding:0 10px;background:var(--green-bg);color:var(--green);border:1px solid #86efac;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;}
+.btn-deny{height:28px;padding:0 10px;background:var(--red-bg);color:var(--red);border:1px solid #fca5a5;border-radius:5px;font-size:12px;font-weight:600;cursor:pointer;}
+.toolbar{display:flex;gap:8px;align-items:center;margin-bottom:1rem;flex-wrap:wrap;}
+.spacer{flex:1;}
+.filter-chip{height:28px;padding:0 12px;border:1px solid var(--gray-300);border-radius:14px;background:white;font-size:12px;font-weight:500;color:var(--gray-500);cursor:pointer;transition:all .15s;}
+.filter-chip:hover{border-color:var(--navy-light);color:var(--navy);}
+.filter-chip.active{background:var(--navy);color:white;border-color:var(--navy);}
+.filter-chip.red.active{background:var(--red);border-color:var(--red);}
+.filter-chip.amber.active{background:var(--amber);border-color:var(--amber);}
+.search-input{height:32px;border:1px solid var(--gray-300);border-radius:var(--radius);padding:0 8px 0 28px;font-size:13px;outline:none;transition:border-color .15s;background:white url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%238896a8' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E") no-repeat 8px center;}
+.search-input:focus{border-color:var(--navy-light);}
+.modal-backdrop{position:fixed;inset:0;background:rgba(10,31,92,.5);z-index:200;display:flex;align-items:center;justify-content:center;padding:1rem;}
+.modal{background:white;border-radius:12px;padding:1.5rem;width:100%;max-width:460px;box-shadow:0 24px 48px rgba(10,31,92,.3);max-height:90vh;overflow-y:auto;}
+.modal h3{font-size:16px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+.modal p{font-size:13px;color:var(--gray-500);margin-bottom:1rem;}
+.modal-field{margin-bottom:.875rem;}
+.modal-field label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-500);margin-bottom:4px;}
+.modal-field input,.modal-field select,.modal-field textarea{width:100%;border:1.5px solid var(--gray-300);border-radius:var(--radius);padding:8px 10px;font-size:14px;outline:none;font-family:inherit;transition:border-color .15s;}
+.modal-field input:focus,.modal-field select:focus,.modal-field textarea:focus{border-color:var(--navy-light);}
+.modal-field textarea{resize:vertical;min-height:60px;}
+.modal-actions{display:flex;gap:8px;margin-top:1rem;}
+.modal-err{color:var(--red);font-size:12px;margin-bottom:.5rem;display:none;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.alert{border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:13px;line-height:1.5;}
+.alert.warn{background:var(--amber-bg);border:1px solid #fcd34d;color:#92400e;}
+.alert.danger{background:var(--red-bg);border:1px solid #fca5a5;color:var(--red);}
+.alert.info{background:var(--steel-bg);border:1px solid var(--steel-light);color:var(--navy-mid);}
+.alert.success{background:var(--green-bg);border:1px solid #86efac;color:var(--green);}
+.upload-zone{border:2px dashed var(--gray-300);border-radius:10px;padding:2rem;text-align:center;cursor:pointer;background:var(--gray-50);transition:all .15s;}
+.upload-zone:hover,.upload-zone.loaded{border-color:var(--navy-light);background:var(--steel-bg);border-style:solid;}
+.upload-zone input{display:none;}
+.upload-zone label{cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.upload-icon{font-size:28px;}
+.step-pills{display:flex;gap:6px;margin-bottom:1.5rem;flex-wrap:wrap;}
+.step-pill{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--gray-200);color:var(--gray-400);background:white;}
+.step-pill.active{background:var(--navy);color:white;border-color:var(--navy);}
+.step-pill.done{background:var(--steel-bg);color:var(--navy-light);border-color:var(--steel);}
+.exception-row td{background:#fff1f2;color:var(--red);}
+.adj-note{font-size:10px;background:#fff7ed;color:#c2410c;border-radius:3px;padding:1px 4px;margin-left:4px;}
+/* Labeled PTO progress bar — used in Balances table */
+.pto-cell{min-width:150px;}
+.pto-cell-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:4px;}
+.pto-cell-left{font-size:14px;font-weight:700;}
+.pto-cell-sub{font-size:11px;color:var(--gray-500);white-space:nowrap;}
+.pto-track{height:7px;border-radius:4px;background:var(--gray-200);overflow:hidden;width:100%;}
+.pto-fill{height:100%;border-radius:4px;transition:width .3s;}
+.pto-fill.sick{background:#16a34a;}
+.pto-fill.vac{background:var(--navy-light);}
+.pto-fill.danger{background:var(--red);}
+.pto-fill.warn{background:var(--amber);}
+.reminder-card{background:white;border:1px solid var(--gray-200);border-radius:10px;padding:1rem 1.25rem;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px;box-shadow:var(--shadow);}
+.reminder-card.urgent{border-left:3px solid var(--red);}
+.reminder-card.soon{border-left:3px solid var(--amber);}
+.reminder-card.upcoming{border-left:3px solid var(--navy-light);}
+.rem-name{font-weight:700;font-size:14px;color:var(--navy);}
+.rem-type{font-size:12px;color:var(--gray-500);margin-top:2px;}
+.rem-date{font-size:12px;font-weight:600;text-align:right;}
+.reminder-card.urgent .rem-date{color:var(--red);}
+.reminder-card.soon .rem-date{color:var(--amber);}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--gray-200);border-radius:8px;overflow:hidden;border:1px solid var(--gray-200);}
+.cal-hdr{background:var(--navy);padding:7px;text-align:center;font-size:10px;font-weight:700;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.06em;}
+.cal-day{background:white;padding:4px 5px;min-height:64px;font-size:11px;}
+.cal-date{font-weight:600;color:var(--gray-700);margin-bottom:2px;}
+.cal-day.today{background:#eff6ff;border:2px solid var(--navy);}
+.cal-day.today .cal-date{background:var(--navy);color:white;font-weight:700;display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;font-size:10px;line-height:1;}
+.cal-day.other-month .cal-date{color:var(--gray-300);}
+.cal-day.weekend{background:var(--gray-50);}
+.cal-day.holiday{background:#f0fdf4;}
+.cal-event{font-size:10px;font-weight:600;padding:1px 4px;border-radius:3px;margin-bottom:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.5;}
+/* Department colors — full day (solid) */
+.cal-event.dept-D{background:#fef3c7;color:#92400e;border-left:2px solid #d97706;}
+.cal-event.dept-O{background:#dbeafe;color:#1e3a8a;border-left:2px solid #2563eb;}
+.cal-event.dept-R{background:#dcfce7;color:#14532d;border-left:2px solid #16a34a;}
+.cal-event.dept-W{background:#ede9fe;color:#4c1d95;border-left:2px solid #7c3aed;}
+/* Partial day — same colors but striped/lighter with clock indicator */
+.cal-event.dept-D.partial{background:repeating-linear-gradient(45deg,#fef3c7,#fef3c7 3px,#fffbeb 3px,#fffbeb 6px);border-left:2px dashed #d97706;color:#92400e;}
+.cal-event.dept-O.partial{background:repeating-linear-gradient(45deg,#dbeafe,#dbeafe 3px,#eff6ff 3px,#eff6ff 6px);border-left:2px dashed #2563eb;color:#1e3a8a;}
+.cal-event.dept-R.partial{background:repeating-linear-gradient(45deg,#dcfce7,#dcfce7 3px,#f0fdf4 3px,#f0fdf4 6px);border-left:2px dashed #16a34a;color:#14532d;}
+.cal-event.dept-W.partial{background:repeating-linear-gradient(45deg,#ede9fe,#ede9fe 3px,#f5f3ff 3px,#f5f3ff 6px);border-left:2px dashed #7c3aed;color:#4c1d95;}
+/* Special types that override department color */
+.cal-event.holiday{background:#f0fdf4;color:#166534;border-left:2px solid #16a34a;}
+.cal-event.unexcused{background:#fee2e2;color:#b91c1c;border-left:2px solid #dc2626;}
+.cal-event.absent{background:#fce7f3;color:#9d174d;border-left:2px solid #db2777;}
+
+/* Calendar staffing indicator */
+.cal-dept-bar{display:flex;gap:1px;margin-top:2px;}
+.cal-dept-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.cal-dept-dot.D{background:#d97706;}
+.cal-dept-dot.O{background:#2563eb;}
+.cal-dept-dot.R{background:#16a34a;}
+.cal-dept-dot.W{background:#7c3aed;}
+.empty{text-align:center;padding:2.5rem;color:var(--gray-400);font-size:13px;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;}
+
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(calc(100% + 2rem));background:var(--navy);color:white;padding:11px 20px;border-radius:8px;font-size:13px;font-weight:600;box-shadow:0 8px 24px rgba(10,31,92,.3);z-index:999;transition:transform .3s cubic-bezier(.34,1.56,.64,1),visibility .3s;white-space:nowrap;display:flex;align-items:center;gap:8px;visibility:hidden;pointer-events:none;}
+.toast.show{transform:translateX(-50%) translateY(0);visibility:visible;pointer-events:auto;}
+.toast.error{background:var(--red);}
+.toast.success{background:var(--green);}
+
+/* SEARCHABLE SELECT */
+.search-select-wrap{position:relative;}
+.search-select-input{width:100%;border:1.5px solid var(--gray-300);border-radius:var(--radius);padding:8px 10px;font-size:14px;outline:none;font-family:inherit;cursor:pointer;background:white;}
+.search-select-input:focus{border-color:var(--navy-light);}
+.search-select-dropdown{position:absolute;top:100%;left:0;right:0;background:white;border:1.5px solid var(--navy-light);border-top:none;border-radius:0 0 var(--radius) var(--radius);max-height:200px;overflow-y:auto;z-index:300;display:none;box-shadow:0 8px 16px rgba(10,31,92,.12);}
+.search-select-dropdown.open{display:block;}
+.search-select-option{padding:8px 10px;font-size:13px;cursor:pointer;border-bottom:1px solid var(--gray-100);}
+.search-select-option:last-child{border-bottom:none;}
+.search-select-option:hover,.search-select-option.highlighted{background:var(--steel-bg);color:var(--navy);}
+.search-select-option.no-results{color:var(--gray-400);cursor:default;font-style:italic;}
+
+/* MANAGER LOG BANK BUTTONS */
+.mgr-bank-btn{padding:9px 12px;border:1.5px solid var(--gray-300);border-radius:var(--radius);background:white;font-size:13px;font-weight:500;color:var(--gray-700);cursor:pointer;text-align:left;transition:all .15s;width:100%;}
+.mgr-bank-btn:hover{border-color:var(--navy-light);color:var(--navy);background:var(--steel-bg);}
+.mgr-bank-btn.selected{border-color:var(--navy);background:var(--navy);color:white;font-weight:600;}
+.mgr-bank-btn.selected[data-bank="sick"]{background:#15803d;border-color:#15803d;}
+.mgr-bank-btn.selected[data-bank="vacation"]{background:var(--navy);border-color:var(--navy);}
+.mgr-bank-btn.selected[data-bank="mixed"]{background:#5b21b6;border-color:#5b21b6;}
+.mgr-bank-btn.selected[data-bank="unpaid_excused"]{background:var(--amber);border-color:var(--amber);}
+.mgr-bank-btn.selected[data-bank="paid_excused"]{background:var(--green);border-color:var(--green);}
+.mgr-choice-card{display:flex;align-items:center;gap:8px;padding:12px 14px;border:1.5px solid var(--gray-300);border-radius:var(--radius);background:white;font-size:13px;font-weight:600;color:var(--gray-700);cursor:pointer;transition:all .15s;text-align:left;}
+.mgr-choice-card:hover{border-color:var(--navy-light);background:var(--steel-bg);}
+.mgr-choice-card .mgr-choice-icon{font-size:18px;flex-shrink:0;}
+.mgr-choice-card.selected{border-width:2px;border-color:var(--navy);background:var(--navy);color:white;box-shadow:0 2px 8px rgba(10,31,92,.25);}
+.mgr-choice-card.selected[data-bank="sick"]{border-color:#15803d;background:#15803d;box-shadow:0 2px 8px rgba(21,128,61,.25);}
+.mgr-choice-card.selected[data-bank="vacation"]{border-color:var(--navy);background:var(--navy);}
+.mgr-choice-card.selected[data-bank="unpaid_excused"]{border-color:var(--amber);background:var(--amber);box-shadow:0 2px 8px rgba(180,83,9,.25);}
+.mgr-choice-card.selected[data-bank="paid_excused"]{border-color:var(--green);background:var(--green);box-shadow:0 2px 8px rgba(21,128,61,.25);}
+.mgr-choice-card.selected::after{content:'✓';margin-left:auto;font-weight:700;}
+.badge.paid_excused{background:var(--green-bg);color:var(--green);border:1px solid #86efac;}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen" class="login-wrap">
+  <div class="login-card">
+    <div class="login-logo-wrap">
+      <img src="logo.png" alt="I E DME Inc.">
+      <div class="login-divider"></div>
+    </div>
+    <div class="login-title">Manager Dashboard</div>
+    <div class="login-sub">Riverside Medical Supply — Payroll &amp; HR</div>
+    <div id="login-err" class="login-err"></div>
+    <div class="login-field"><label>Manager password</label><input type="password" id="mgr-password" onkeydown="if(event.key==='Enter')document.getElementById('service-key').focus()"></div>
+    <div class="login-field">
+      <label>Supabase service role key</label>
+      <input type="password" id="service-key" placeholder="eyJ..." onkeydown="if(event.key==='Enter')login()">
+      <div style="font-size:11px;color:var(--gray-400);margin-top:3px;" id="sk-hint">Session only — never stored.</div>
+    </div>
+    <button class="btn-login" onclick="login()">Sign in</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app-screen" style="display:none;">
+<header class="app-header">
+  <div class="brand">
+    <img src="logo.png" alt="I E DME Inc.">
+    <div class="brand-divider"></div>
+    <span class="brand-name">Payroll &amp; HR Manager</span>
+  </div>
+  <div><a href="index.html" class="hbtn" target="_blank">Employee form ↗</a><button class="hbtn" onclick="logout()">Sign out</button></div>
+</header>
+<nav class="app-nav">
+  <!-- PTO group -->
+  <button class="nav-btn active" onclick="showPane('pending',this)"><span class="nav-icon">◷</span> Pending <span class="nav-badge" id="pending-count" style="display:none;"></span></button>
+  <button class="nav-btn" onclick="showPane('balances',this)"><span class="nav-icon">▣</span> PTO Balances</button>
+  <button class="nav-btn" onclick="showPane('calendar',this)"><span class="nav-icon">▦</span> Calendar</button>
+  <button class="nav-btn" onclick="showPane('history',this)"><span class="nav-icon">≡</span> History</button>
+  <span class="nav-divider"></span>
+  <!-- Payroll group -->
+  <button class="nav-btn" onclick="showPane('employees',this)"><span class="nav-icon">◎</span> Employees</button>
+  <button class="nav-btn" onclick="showPane('payroll',this)"><span class="nav-icon">$</span> Payroll</button>
+  <button class="nav-btn" onclick="showPane('reminders',this)"><span class="nav-icon">◈</span> Reminders <span class="nav-badge amber" id="reminder-badge" style="display:none;"></span></button>
+  <span class="nav-divider"></span>
+  <!-- Reports group -->
+  <button class="nav-btn" onclick="showPane('attendance',this)"><span class="nav-icon">▤</span> Attendance <span class="nav-badge amber" id="attendance-badge" style="display:none;"></span></button>
+  <button class="nav-btn" onclick="showPane('retainer',this)"><span class="nav-icon">◆</span> Retainer</button>
+</nav>
+<main class="app-main">
+
+<!-- PENDING -->
+<div id="pane-pending" class="pane active">
+  <div class="section-header"><h2>Pending requests</h2><p>Review and approve or deny employee time off requests.</p></div>
+  <div class="toolbar">
+    <button class="btn-primary" onclick="openManagerLogModal()">+ Log time off for employee</button>
+    <button class="btn-secondary" onclick="openLogAbsenceModal()">+ Log unexcused absence</button>
+  </div>
+  <div id="pending-list"></div>
+</div>
+
+<!-- PAYROLL -->
+<div id="pane-payroll" class="pane">
+  <div class="section-header"><h2>Payroll processing</h2><p>Upload time clock CSV → review exceptions → make corrections → export to CPA.</p></div>
+  <div class="step-pills">
+    <div class="step-pill active" id="pp-pill-1">1 · Upload CSV</div>
+    <div class="step-pill" id="pp-pill-2">2 · Exceptions</div>
+    <div class="step-pill" id="pp-pill-3">3 · Corrections &amp; log</div>
+    <div class="step-pill" id="pp-pill-4">4 · Export</div>
+  </div>
+  <div id="pp-step-1">
+    <div class="two-col" style="margin-bottom:1rem;">
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--gray-500);display:block;margin-bottom:5px;">Pay period start</label>
+        <input type="date" id="pp-start" style="height:36px;border:1px solid var(--gray-300);border-radius:var(--radius);padding:0 10px;font-size:14px;outline:none;width:100%;">
+      </div>
+      <div><label style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--gray-500);display:block;margin-bottom:5px;">Pay period end</label>
+        <input type="date" id="pp-end" style="height:36px;border:1px solid var(--gray-300);border-radius:var(--radius);padding:0 10px;font-size:14px;outline:none;width:100%;">
+      </div>
+    </div>
+    <div class="upload-zone" id="tc-upload-zone" style="margin-bottom:1rem;">
+      <label for="tc-file">
+        <div class="upload-icon">⏱️</div>
+        <strong style="font-size:14px;color:var(--gray-700);">Click to upload time clock CSV</strong>
+        <div style="font-size:12px;color:var(--gray-400);">Standard export from your time clock system</div>
+        <div id="tc-fname" style="font-size:12px;color:var(--teal);font-weight:600;"></div>
+      </label>
+      <input type="file" id="tc-file" accept=".csv" onchange="loadTimeclockCSV(this)">
+    </div>
+    <button class="btn-primary" onclick="runPayrollStep2()" id="btn-pp-next" disabled>Next: Review exceptions →</button>
+  </div>
+  <div id="pp-step-2" style="display:none;">
+    <div id="exceptions-content"></div>
+    <div style="display:flex;gap:8px;margin-top:1rem;">
+      <button class="btn-secondary" onclick="goPPStep(1)">← Back</button>
+      <button class="btn-primary" onclick="goPPStep(3)">Next: Corrections →</button>
+    </div>
+  </div>
+  <div id="pp-step-3" style="display:none;">
+    <div class="alert info" style="font-size:13px;">Click <strong>Edit</strong> on any row to change punches. All changes are logged permanently with your name and reason.</div>
+    <div class="toolbar">
+      <input class="search-input" type="search" placeholder="Search employee..." oninput="filterPunchLog(this.value)" style="width:200px;">
+      <div class="spacer"></div>
+      <button class="btn-secondary" onclick="goPPStep(2)">← Back to exceptions</button>
+    </div>
+    <div id="punch-log-content"></div>
+    <div style="margin-top:1rem;"><button class="btn-primary" onclick="goPPStep(4)">Next: Export →</button></div>
+  </div>
+  <div id="pp-step-4" style="display:none;">
+    <div id="export-summary"></div>
+    <div style="display:flex;gap:8px;margin-top:1rem;flex-wrap:wrap;">
+      <button class="btn-primary" onclick="exportPayrollCSV()" style="background:var(--green);">⬇ Export payroll to CPA (.xlsx)</button>
+      <button class="btn-secondary" onclick="exportAuditLog()">⬇ Export audit log (.xlsx)</button>
+      <button class="btn-secondary" onclick="goPPStep(3)">← Back</button>
+    </div>
+  </div>
+</div>
+
+<!-- ATTENDANCE -->
+<div id="pane-attendance" class="pane">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;">
+    <div class="section-header" style="margin:0;"><h2>Attendance tracker</h2><p>Cumulative record of late arrivals, late lunches, and overtime. Populated from each payroll CSV upload.</p></div>
+    <div style="display:flex;gap:8px;">
+      <input class="search-input" type="search" placeholder="Search employee..." oninput="filterAttendance(this.value)" style="width:190px;">
+      <button class="btn-secondary" onclick="exportAttendance()">⬇ Export</button>
+    </div>
+  </div>
+  <div class="kpi-row" id="attendance-kpis"></div>
+  <div class="toolbar">
+    <button class="filter-chip active" onclick="setAttendanceFilter('all',this)">All employees</button>
+    <button class="filter-chip amber" onclick="setAttendanceFilter('late',this)">Has late arrivals</button>
+    <button class="filter-chip amber" onclick="setAttendanceFilter('lunch',this)">Late lunches</button>
+    <button class="filter-chip red" onclick="setAttendanceFilter('meal',this)">Meal duration violations</button>
+    <button class="filter-chip red" onclick="setAttendanceFilter('ot',this)">Has overtime</button>
+    <div class="spacer"></div>
+    <select id="attendance-period-filter" onchange="renderAttendance()" style="height:28px;border:1px solid var(--gray-300);border-radius:var(--radius);font-size:12px;padding:0 8px;outline:none;background:white;">
+      <option value="all">All pay periods</option>
+    </select>
+  </div>
+  <div class="card"><div class="overflow-x"><table>
+    <thead><tr>
+      <th>Employee</th>
+      <th class="right">Late arrivals</th>
+      <th class="right">Total late min</th>
+      <th class="right">Late lunches</th>
+      <th class="right">Meal violations</th>
+      <th class="right">OT days</th>
+      <th class="right">Total OT hours</th>
+      <th>Last incident</th>
+      <th></th>
+    </tr></thead>
+    <tbody id="attendance-tbody"></tbody>
+  </table></div></div>
+
+  <!-- Detail panel — shown when you expand an employee -->
+  <div id="attendance-detail" style="display:none;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;">
+      <h3 id="attendance-detail-name" style="font-size:15px;font-weight:700;color:var(--navy);"></h3>
+      <button class="btn-secondary" onclick="document.getElementById('attendance-detail').style.display='none';">✕ Close</button>
+    </div>
+    <div style="font-size:11px;color:var(--gray-400);margin-bottom:6px;">Meal duration flags anything under 30 min (possible CA meal-break violation) or over 60 min.</div>
+    <div class="card"><div class="overflow-x"><table>
+      <thead><tr>
+        <th>Date</th><th>Pay period</th><th>Scheduled</th><th>Clocked in</th>
+        <th class="right">Late (min)</th><th>Lunch start</th><th>Late lunch?</th>
+        <th class="right">Meal duration</th>
+        <th class="right">Worked hrs</th><th class="right">OT 1.5x</th><th class="right">OT 2x</th>
+      </tr></thead>
+      <tbody id="attendance-detail-tbody"></tbody>
+    </table></div></div>
+  </div>
+</div>
+
+<!-- PTO BALANCES -->
+<div id="pane-balances" class="pane">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;">
+    <div class="section-header" style="margin:0;"><h2>PTO Balances</h2><p>Click Edit to manually adjust used hours. Payout liability shown for December planning.</p></div>
+    <div style="display:flex;gap:8px;">
+      <input class="search-input" type="search" placeholder="Search..." oninput="filterBalances(this.value)" style="width:170px;">
+      <button class="btn-secondary" onclick="openReviewSummary()">📄 Employee review summary</button>
+      <button class="btn-primary" onclick="openNewYearReset()" style="background:var(--navy-mid);">🗓 New Year Reset</button>
+    </div>
+  </div>
+  <div class="kpi-row" id="balance-kpis"></div>
+  <div class="card"><div class="overflow-x"><table>
+    <thead>
+      <tr>
+        <th>Employee</th>
+        <th>Type</th>
+        <th style="min-width:160px;">Sick</th>
+        <th style="min-width:160px;">Vacation</th>
+        <th class="right">Unexcused<br>YTD</th>
+        <th class="right">Payout<br>liability</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody id="balance-tbody"></tbody>
+  </table></div></div>
+  <div style="font-size:12px;color:var(--gray-400);">* Salaried payout = unused hrs × (annual salary ÷ 2080). For tracking only — never deducted from regular pay. December payout resets banks to zero Jan 1.</div>
+</div>
+
+<!-- REMINDERS -->
+<div id="pane-reminders" class="pane">
+  <div class="section-header"><h2>HR Reminders</h2><p>Milestone-based reminders auto-calculated from hire date. Emails sent automatically when due.</p></div>
+  <div class="kpi-row" id="reminder-kpis"></div>
+  <div class="toolbar">
+    <button class="filter-chip active" onclick="setReminderFilter('all',this)">All</button>
+    <button class="filter-chip red" onclick="setReminderFilter('overdue',this)">Overdue</button>
+    <button class="filter-chip amber" onclick="setReminderFilter('soon',this)">Due within 14 days</button>
+    <button class="filter-chip" onclick="setReminderFilter('upcoming',this)">Upcoming</button>
+    <button class="filter-chip" onclick="setReminderFilter('dismissed',this)">Dismissed</button>
+  </div>
+  <div id="reminders-list"></div>
+</div>
+
+<!-- CALENDAR -->
+<div id="pane-calendar" class="pane">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;">
+    <div class="section-header" style="margin:0;"><h2>Time off calendar</h2><p>Color = department · Solid pill = full day · Striped pill = partial day</p></div>
+    <div style="display:flex;gap:6px;align-items:center;">
+      <button class="btn-secondary" onclick="changeMonth(-1)">← Prev</button>
+      <span id="cal-month-label" style="font-weight:600;font-size:14px;min-width:130px;text-align:center;"></span>
+      <button class="btn-secondary" onclick="changeMonth(1)">Next →</button>
+    </div>
+  </div>
+  <!-- Department staffing summary for month -->
+  <div id="cal-dept-summary" style="display:flex;gap:10px;margin-bottom:1rem;flex-wrap:wrap;"></div>
+  <div class="cal-grid" id="cal-grid"></div>
+  <!-- Legend -->
+  <div style="margin-top:12px;display:flex;gap:0;flex-wrap:wrap;">
+    <!-- Department colors -->
+    <div style="background:white;border:1px solid var(--gray-200);border-radius:8px;padding:10px 14px;margin-right:10px;margin-bottom:8px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-500);margin-bottom:7px;">Department</div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:14px;height:10px;background:#fef3c7;border-left:2px solid #d97706;border-radius:2px;display:inline-block;"></span> D — Drivers</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:14px;height:10px;background:#dbeafe;border-left:2px solid #2563eb;border-radius:2px;display:inline-block;"></span> O — Office</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:14px;height:10px;background:#dcfce7;border-left:2px solid #16a34a;border-radius:2px;display:inline-block;"></span> R — Retail</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:14px;height:10px;background:#ede9fe;border-left:2px solid #7c3aed;border-radius:2px;display:inline-block;"></span> W — Warehouse</span>
+      </div>
+    </div>
+    <!-- Attendance types -->
+    <div style="background:white;border:1px solid var(--gray-200);border-radius:8px;padding:10px 14px;margin-right:10px;margin-bottom:8px;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-500);margin-bottom:7px;">Type</div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:14px;height:10px;background:#dbeafe;border-left:2px solid #2563eb;border-radius:2px;display:inline-block;"></span> Approved PTO (full day)</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:14px;height:10px;background:repeating-linear-gradient(45deg,#dbeafe,#dbeafe 3px,#eff6ff 3px,#eff6ff 6px);border-left:2px dashed #2563eb;border-radius:2px;display:inline-block;"></span> Partial day</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:14px;height:10px;background:#fee2e2;border-left:2px solid #dc2626;border-radius:2px;display:inline-block;"></span> Unexcused absence</span>
+        <span style="display:flex;align-items:center;gap:6px;font-size:12px;"><span style="width:14px;height:10px;background:#f0fdf4;border-left:2px solid #16a34a;border-radius:2px;display:inline-block;"></span> Holiday</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div id="pane-history" class="pane">
+  <div class="section-header"><h2>Request history</h2></div>
+  <div class="toolbar">
+    <input class="search-input" type="search" placeholder="Search..." oninput="filterHistory(this.value)" style="width:180px;">
+    <button class="filter-chip active" onclick="setHistoryFilter('all',this)">All</button>
+    <button class="filter-chip" onclick="setHistoryFilter('pending',this)">Pending</button>
+    <button class="filter-chip" onclick="setHistoryFilter('approved',this)">Approved</button>
+    <button class="filter-chip red" onclick="setHistoryFilter('denied',this)">Denied</button>
+    <div class="spacer"></div>
+    <button class="btn-secondary" onclick="exportHistory()">⬇ Export</button>
+  </div>
+  <div class="card"><div class="overflow-x"><table>
+    <thead><tr>
+      <th>Employee</th><th>Type</th><th>Dates</th>
+      <th class="right">Hours</th>
+      <th>Notice</th><th>Override</th><th>Status</th><th>By</th><th>Submitted</th><th></th>
+    </tr></thead>
+    <tbody id="history-tbody"></tbody>
+  </table></div></div>
+</div>
+
+<!-- EMPLOYEES -->
+<div id="pane-employees" class="pane">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;">
+    <div class="section-header" style="margin:0;"><h2>Employees</h2></div>
+    <div style="display:flex;gap:8px;">
+      <input class="search-input" type="search" placeholder="Search..." oninput="filterEmployees(this.value)" style="width:160px;">
+      <button class="btn-primary" onclick="showAddEmployeeModal()">+ Add employee</button>
+    </div>
+  </div>
+  <div class="kpi-row" id="employee-kpis"></div>
+  <div class="toolbar">
+    <button class="filter-chip active" onclick="setEmpFilter('active',this)">Active</button>
+    <button class="filter-chip red" onclick="setEmpFilter('terminated',this)">Terminated</button>
+    <button class="filter-chip" onclick="setEmpFilter('all',this)">All</button>
+  </div>
+  <div class="card"><div class="overflow-x"><table>
+    <thead><tr>
+      <th class="sortable" onclick="sortEmps('id')">ID <span class="sort-arrow" id="sort-id"></span></th>
+      <th class="sortable" onclick="sortEmps('name')">Name <span class="sort-arrow" id="sort-name">▲</span></th>
+      <th class="sortable" onclick="sortEmps('hire_date')">Hire date <span class="sort-arrow" id="sort-hire_date"></span></th>
+      <th>Type</th>
+      <th class="right sortable" onclick="sortEmps('hourly_rate')">Rate <span class="sort-arrow" id="sort-hourly_rate"></span></th>
+      <th class="right">Sick</th><th class="right">Vacation</th><th>Status</th><th></th>
+    </tr></thead>
+    <tbody id="emp-tbody"></tbody>
+  </table></div></div>
+</div>
+
+<!-- RETAINER -->
+<div id="pane-retainer" class="pane">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px;">
+    <div class="section-header" style="margin:0;"><h2>Retainer pay</h2><p>Owner, family, fixed-pay roles — no hourly tracking or PTO.</p></div>
+    <button class="btn-primary" onclick="showAddRetainerModal()">+ Add retainer pay</button>
+  </div>
+  <div class="kpi-row" id="retainer-kpis"></div>
+  <div class="card"><div class="overflow-x"><table>
+    <thead><tr><th>ID</th><th>Name</th><th>Relationship</th><th>Hire date</th><th class="right">$/period</th><th>Status</th><th></th></tr></thead>
+    <tbody id="retainer-tbody"></tbody>
+  </table></div></div>
+</div>
+
+</main>
+</div>
+
+<!-- MODALS -->
+<div id="modal-approve" class="modal-backdrop" style="display:none;"><div class="modal">
+  <h3>✅ Approve request</h3><p id="approve-detail"></p>
+  <div class="modal-field"><label>Bank override — change which bank this draws from</label>
+    <select id="approve-bank" onchange="toggleApproveSplit()">
+      <option value="">Keep as requested</option>
+      <option value="sick">🤒 Override to sick time</option>
+      <option value="vacation">✈️ Override to vacation</option>
+      <option value="mixed">🔀 Override to split banks</option>
+      <option value="unpaid_excused">📋 Override to unpaid excused</option>
+    </select>
+  </div>
+  <div id="approve-split-row" style="display:none;" class="two-col">
+    <div class="modal-field"><label>Sick hours</label><input type="number" id="approve-sick-h" step="0.5" min="0" value="0"></div>
+    <div class="modal-field"><label>Vacation hours</label><input type="number" id="approve-vac-h" step="0.5" min="0" value="0"></div>
+  </div>
+  <div class="modal-field"><label>Your name</label><input type="text" id="approve-by" placeholder="e.g. David Lee"></div>
+  <div class="modal-err" id="approve-err"></div>
+  <div class="modal-actions">
+    <button class="btn-approve" style="flex:1;height:36px;font-size:13px;font-weight:600;" onclick="confirmApprove()">Confirm approval</button>
+    <button class="btn-secondary" onclick="closeModal('modal-approve')">Cancel</button>
+  </div>
+</div></div>
+
+<div id="modal-deny" class="modal-backdrop" style="display:none;"><div class="modal">
+  <h3>❌ Deny request</h3><p id="deny-detail"></p>
+  <div class="modal-field"><label>Your name</label><input type="text" id="deny-by" placeholder="e.g. David Lee"></div>
+  <div class="modal-field"><label>Reason (internal note)</label><textarea id="deny-reason" placeholder="Employee will not see this"></textarea></div>
+  <div class="modal-actions">
+    <button class="btn-deny" style="flex:1;height:36px;font-size:13px;font-weight:600;" onclick="confirmDeny()">Confirm denial</button>
+    <button class="btn-secondary" onclick="closeModal('modal-deny')">Cancel</button>
+  </div>
+</div></div>
+
+<div id="modal-mgr-log" class="modal-backdrop" style="display:none;"><div class="modal" style="max-width:500px;">
+  <h3 id="mgr-log-title">📝 Log time off for employee</h3>
+  <p>Creates a pre-approved entry. Dates drive the hours automatically — no math needed.</p>
+
+  <!-- Employee -->
+  <div class="modal-field">
+    <label>Employee</label>
+    <div class="search-select-wrap" id="mgr-emp-wrap">
+      <input type="text" class="search-select-input" id="mgr-emp-search" placeholder="Search by name..." oninput="filterMgrEmpDropdown(this.value)" onfocus="openMgrEmpDropdown()" autocomplete="off">
+      <input type="hidden" id="mgr-log-emp">
+      <div class="search-select-dropdown" id="mgr-emp-dropdown"></div>
+    </div>
+  </div>
+
+  <!-- Dates -->
+  <div class="two-col">
+    <div class="modal-field"><label>Start date</label><input type="date" id="mgr-log-start" onchange="onMgrStartDateChange()"></div>
+    <div class="modal-field"><label>End date</label><input type="date" id="mgr-log-end" onchange="onMgrEndDateChange()"></div>
+  </div>
+
+  <!-- Partial day toggle -->
+  <div class="modal-field" style="margin-bottom:.5rem;">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;text-transform:none;letter-spacing:0;font-weight:500;color:var(--gray-700);">
+      <input type="checkbox" id="mgr-partial" onchange="onMgrPartialToggle()" style="width:auto;">
+      This is a partial day (less than 8 hours)
+    </label>
+  </div>
+  <div id="mgr-partial-fields" style="display:none;background:var(--steel-bg);border:1px solid var(--steel-light);border-radius:var(--radius);padding:10px 12px;margin-bottom:.875rem;">
+    <div class="two-col">
+      <div class="modal-field" style="margin-bottom:0;"><label>Hours</label><input type="number" id="mgr-partial-hrs" step="0.5" min="0.5" max="7.5" placeholder="e.g. 3.5" oninput="refreshMgrHoursSummary()"></div>
+      <div class="modal-field" style="margin-bottom:0;"><label>Reason</label><select id="mgr-partial-reason"><option value="late_arrival">Late arrival</option><option value="early_leave">Early leave</option><option value="other">Other</option></select></div>
+    </div>
+    <div class="modal-field" style="margin-top:.5rem;margin-bottom:0;"><label>Detail</label><input type="text" id="mgr-partial-detail" placeholder="e.g. left at 2pm for doctor appointment"></div>
+  </div>
+
+  <!-- Auto-calculated hours summary -->
+  <div id="mgr-hours-summary" style="display:none;background:var(--navy);color:white;border-radius:var(--radius);padding:10px 14px;margin-bottom:.5rem;font-size:13px;">
+    <div id="mgr-hours-text" style="font-weight:600;"></div>
+    <div id="mgr-hours-sub" style="font-size:11px;opacity:.7;margin-top:2px;"></div>
+  </div>
+
+  <!-- Hours override -->
+  <div id="mgr-hours-override-row" style="display:none;margin-bottom:.875rem;">
+    <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;text-transform:none;letter-spacing:0;font-weight:500;color:var(--gray-700);">
+      <input type="checkbox" id="mgr-hours-override" onchange="toggleMgrHoursOverride()" style="width:auto;">
+      Not a full day for each date — adjust total hours
+    </label>
+    <div id="mgr-override-field" style="display:none;margin-top:8px;display:none;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <input type="number" id="mgr-override-hrs" step="0.5" min="0.5" placeholder="e.g. 12" oninput="applyMgrHoursOverride()" style="width:100px;border:1.5px solid var(--gray-300);border-radius:var(--radius);padding:8px 10px;font-size:14px;outline:none;">
+        <span style="font-size:13px;color:var(--gray-500);">hours total across all selected dates</span>
+      </div>
+      <div id="mgr-override-note" style="font-size:12px;color:var(--gray-500);margin-top:4px;"></div>
+    </div>
+  </div>
+
+  <!-- Bank allocation -->
+  <div id="mgr-bank-section" style="display:none;">
+    <div class="modal-field" style="margin-bottom:8px;">
+      <label>Which bank covers this?</label>
+
+      <!-- MODE 1: single-choice cards (default) -->
+      <div id="mgr-single-mode">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px;">
+          <button type="button" class="mgr-choice-card" data-bank="sick" onclick="pickMgrSingleBank('sick')">
+            <span class="mgr-choice-icon">🤒</span><span class="mgr-choice-label">Sick</span>
+          </button>
+          <button type="button" class="mgr-choice-card" data-bank="vacation" onclick="pickMgrSingleBank('vacation')">
+            <span class="mgr-choice-icon">✈️</span><span class="mgr-choice-label">Vacation</span>
+          </button>
+          <button type="button" class="mgr-choice-card" data-bank="unpaid_excused" onclick="pickMgrSingleBank('unpaid_excused')">
+            <span class="mgr-choice-icon">📋</span><span class="mgr-choice-label">Unpaid excused</span>
+          </button>
+          <button type="button" class="mgr-choice-card" data-bank="paid_excused" onclick="pickMgrSingleBank('paid_excused')">
+            <span class="mgr-choice-icon">✅</span><span class="mgr-choice-label">Paid excused</span>
+          </button>
+        </div>
+        <button type="button" onclick="switchToMgrSplitMode()" style="background:none;border:none;color:var(--navy-light);font-size:12px;font-weight:600;cursor:pointer;padding:8px 0 0;text-decoration:underline;">Split across multiple banks →</button>
+      </div>
+
+      <!-- MODE 2: manual split (opt-in only) -->
+      <div id="mgr-split-mode" style="display:none;">
+        <div style="background:var(--steel-bg);border:1px solid var(--steel-light);border-radius:var(--radius);padding:10px 12px;margin-top:4px;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <label style="font-size:13px;font-weight:600;flex:1;text-transform:none;letter-spacing:0;">🤒 Sick hours</label>
+            <input type="number" id="mgr-split-sick" step="0.5" min="0" value="0" oninput="updateMgrSplitTotal()" style="width:80px;border:1.5px solid var(--gray-300);border-radius:6px;padding:5px 8px;font-size:14px;text-align:right;outline:none;">
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <label style="font-size:13px;font-weight:600;flex:1;text-transform:none;letter-spacing:0;">✈️ Vacation hours</label>
+            <input type="number" id="mgr-split-vac" step="0.5" min="0" value="0" oninput="updateMgrSplitTotal()" style="width:80px;border:1.5px solid var(--gray-300);border-radius:6px;padding:5px 8px;font-size:14px;text-align:right;outline:none;">
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <label style="font-size:13px;font-weight:600;flex:1;text-transform:none;letter-spacing:0;">📋 Unpaid excused hours</label>
+            <input type="number" id="mgr-split-unpaid" step="0.5" min="0" value="0" oninput="updateMgrSplitTotal()" style="width:80px;border:1.5px solid var(--gray-300);border-radius:6px;padding:5px 8px;font-size:14px;text-align:right;outline:none;">
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+            <label style="font-size:13px;font-weight:600;flex:1;text-transform:none;letter-spacing:0;">✅ Paid excused hours</label>
+            <input type="number" id="mgr-split-paid" step="0.5" min="0" value="0" oninput="updateMgrSplitTotal()" style="width:80px;border:1.5px solid var(--gray-300);border-radius:6px;padding:5px 8px;font-size:14px;text-align:right;outline:none;">
+          </div>
+          <div id="mgr-split-total" style="font-size:12px;font-weight:700;text-align:right;padding-top:6px;border-top:1px solid var(--gray-200);"></div>
+        </div>
+        <button type="button" onclick="switchToMgrSingleMode()" style="background:none;border:none;color:var(--gray-500);font-size:12px;font-weight:600;cursor:pointer;padding:8px 0 0;text-decoration:underline;">← Back to single bank</button>
+      </div>
+    </div>
+
+    <!-- Coverage warning -->
+    <div id="mgr-coverage-warn" style="display:none;" class="alert warn"></div>
+  </div>
+
+  <div class="modal-field"><label>Your name</label><input type="text" id="mgr-log-by" placeholder="e.g. David Lee"></div>
+  <div class="modal-field"><label>Notes <span style="font-weight:400;text-transform:none;font-size:11px;">(optional)</span></label><textarea id="mgr-log-notes" rows="2"></textarea></div>
+  <div class="modal-err" id="mgr-log-err"></div>
+  <div class="modal-actions">
+    <button class="btn-primary" onclick="confirmMgrLog()" style="flex:1;" id="mgr-log-save-btn">Save</button>
+    <button class="btn-secondary" onclick="closeMgrLogModal()">Cancel</button>
+  </div>
+  <div id="mgr-log-delete-row" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--gray-100);">
+    <button class="btn-deny" style="width:100%;height:34px;font-size:13px;font-weight:600;" onclick="confirmDeleteHistory()">🗑 Delete this entry</button>
+  </div>
+</div></div>
+
+<div id="modal-log-absence" class="modal-backdrop" style="display:none;"><div class="modal" style="max-width:480px;">
+  <h3>📋 Log unexcused call-off</h3>
+  <p>Always counts toward the 6-absence yearly limit. Optionally cover pay with PTO below — still counts toward discipline either way.</p>
+  <div class="modal-field">
+    <label>Employee</label>
+    <div class="search-select-wrap" id="abs-emp-wrap">
+      <input type="text" class="search-select-input" id="abs-emp-search" placeholder="Search by name..." oninput="filterAbsEmpDropdown(this.value)" onfocus="openAbsEmpDropdown()" autocomplete="off">
+      <input type="hidden" id="abs-emp">
+      <div class="search-select-dropdown" id="abs-emp-dropdown"></div>
+    </div>
+  </div>
+  <div class="two-col">
+    <div class="modal-field"><label>Date</label><input type="date" id="abs-date"></div>
+    <div class="modal-field"><label>Hours missed</label><input type="number" id="abs-hours" step="0.5" min="0.5" max="12" value="8"></div>
+  </div>
+  <div id="abs-cover-row">
+    <div style="font-size:12px;color:var(--gray-500);margin-bottom:6px;">Employee can cover pay with PTO — still counts toward discipline record.</div>
+    <div class="two-col">
+      <div class="modal-field"><label>✈️ Vacation hours to cover</label><input type="number" id="abs-cover-vac" step="0.5" min="0" value="0"></div>
+      <div class="modal-field"><label>🤒 Sick hours to cover</label><input type="number" id="abs-cover-sick" step="0.5" min="0" value="0"></div>
+    </div>
+  </div>
+  <div class="modal-field"><label>Your name</label><input type="text" id="abs-by" placeholder="e.g. David Lee"></div>
+  <div class="modal-field"><label>Notes</label><textarea id="abs-notes"></textarea></div>
+  <div class="modal-err" id="abs-err"></div>
+  <div class="modal-actions">
+    <button class="btn-primary" onclick="confirmLogAbsence()" style="flex:1;">Save absence</button>
+    <button class="btn-secondary" onclick="closeModal('modal-log-absence')">Cancel</button>
+  </div>
+</div></div>
+
+<div id="modal-edit-punch" class="modal-backdrop" style="display:none;"><div class="modal">
+  <h3 id="ep-title">Edit punch</h3><p id="ep-sub"></p>
+  <div class="alert warn">All changes are logged permanently for compliance. You cannot delete or edit the log entry after saving.</div>
+  <div class="two-col">
+    <div class="modal-field"><label>Clock in</label><input type="time" id="ep-in" step="60"></div>
+    <div class="modal-field"><label>Clock out <span style="font-weight:400;">(blank = missing)</span></label><input type="time" id="ep-out" step="60"></div>
+  </div>
+  <div class="modal-field"><label>Your name</label><input type="text" id="ep-by" placeholder="e.g. David Lee"></div>
+  <div class="modal-field"><label>Reason <span style="color:var(--red);">*required*</span></label>
+    <textarea id="ep-reason" placeholder="e.g. Employee confirmed arrival at 08:00 — forgot to punch in. Moved from 10:05."></textarea>
+  </div>
+  <div class="modal-err" id="ep-err"></div>
+  <div class="modal-actions">
+    <button class="btn-primary" onclick="confirmEditPunch()" style="flex:1;">Save &amp; log</button>
+    <button class="btn-deny" onclick="confirmDeletePunch()" style="height:36px;padding:0 12px;font-size:13px;font-weight:600;">Delete this punch</button>
+    <button class="btn-secondary" onclick="closeModal('modal-edit-punch')">Cancel</button>
+  </div>
+</div></div>
+
+<div id="modal-add-punch" class="modal-backdrop" style="display:none;"><div class="modal">
+  <h3 id="ap-title">Add punch</h3><p id="ap-sub"></p>
+  <div class="alert warn">Adding a punch is a payroll adjustment and will be permanently logged.</div>
+  <div class="modal-field"><label>Date</label><input type="date" id="ap-date"></div>
+  <div class="two-col">
+    <div class="modal-field"><label>Clock in</label><input type="time" id="ap-in" step="60"></div>
+    <div class="modal-field"><label>Clock out</label><input type="time" id="ap-out" step="60"></div>
+  </div>
+  <div class="modal-field"><label>Your name</label><input type="text" id="ap-by" placeholder="e.g. David Lee"></div>
+  <div class="modal-field"><label>Reason <span style="color:var(--red);">*required*</span></label><textarea id="ap-reason" placeholder="e.g. Employee worked but time clock was offline. Verified via supervisor."></textarea></div>
+  <div class="modal-err" id="ap-err"></div>
+  <div class="modal-actions">
+    <button class="btn-primary" onclick="confirmAddPunch()" style="flex:1;">Add punch &amp; log</button>
+    <button class="btn-secondary" onclick="closeModal('modal-add-punch')">Cancel</button>
+  </div>
+</div></div>
+
+<div id="modal-balances" class="modal-backdrop" style="display:none;"><div class="modal">
+  <h3>Edit PTO balances</h3><p id="bal-emp-name"></p>
+  <div class="modal-field"><label>🤒 Sick used this year (hours)</label><input type="number" id="bal-sick" step="0.5" min="0"></div>
+  <div class="modal-field"><label>✈️ Vacation used this year (hours)</label><input type="number" id="bal-vac" step="0.5" min="0"></div>
+  <div class="modal-actions">
+    <button class="btn-primary" onclick="saveBalances()" style="flex:1;">Save</button>
+    <button class="btn-secondary" onclick="closeModal('modal-balances')">Cancel</button>
+  </div>
+</div></div>
+
+<div id="modal-employee" class="modal-backdrop" style="display:none;"><div class="modal" style="max-width:500px;">
+  <h3 id="emp-modal-title">Add employee</h3>
+  <p style="font-size:12px;color:var(--gray-500);margin-bottom:1rem;">First/middle and last name are stored separately. Last name is what employee types to log in. Birthday = 6-digit PIN (MMDDYY).</p>
+  <div class="two-col">
+    <div class="modal-field"><label>Employee ID</label><input type="text" id="emp-id" placeholder="D001"></div>
+    <div class="modal-field"><label>Birthday PIN (MMDDYY)</label><input type="text" id="emp-bday" maxlength="6" placeholder="010590"></div>
+  </div>
+  <div class="two-col">
+    <div class="modal-field"><label>First &amp; middle name(s)</label><input type="text" id="emp-first" placeholder="Maria Del Carmen"></div>
+    <div class="modal-field"><label>Last name <span style="font-weight:400;text-transform:none;font-size:10px;">(login)</span></label><input type="text" id="emp-last" placeholder="Torres"></div>
+  </div>
+  <div class="two-col">
+    <div class="modal-field"><label>Hire date</label><input type="date" id="emp-hire"></div>
+    <div class="modal-field"><label>Employment type</label>
+      <select id="emp-type" onchange="toggleEmpType()">
+        <option value="hourly">Hourly</option><option value="salaried">Salaried</option>
+      </select>
+    </div>
+  </div>
+  <div id="emp-rate-row" class="modal-field"><label>Hourly rate ($)</label><input type="number" id="emp-rate" step="0.01" min="0" placeholder="22.50"></div>
+  <div id="emp-salary-row" class="modal-field" style="display:none;"><label>Annual salary ($) <span style="font-weight:400;text-transform:none;font-size:10px;">— for payout tracking only</span></label><input type="number" id="emp-salary" step="100" min="0" placeholder="65000"></div>
+  <div class="two-col">
+    <div class="modal-field"><label>🤒 Sick bank (hrs/yr)</label><input type="number" id="emp-sick" step="0.5" min="0" placeholder="40"></div>
+    <div class="modal-field"><label>✈️ Vacation bank (hrs/yr)</label><input type="number" id="emp-vac" step="0.5" min="0" placeholder="40"></div>
+  </div>
+  <div class="modal-err" id="emp-err"></div>
+  <div class="modal-actions">
+    <button class="btn-primary" onclick="saveEmployee()" style="flex:1;">Save</button>
+    <button class="btn-secondary" onclick="closeModal('modal-employee')">Cancel</button>
+  </div>
+  <div id="emp-archive-row" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--gray-100);">
+    <button class="btn-deny" style="width:100%;height:34px;font-size:13px;font-weight:600;" onclick="openTerminateModal()">🗄 Archive / mark terminated</button>
+  </div>
+</div></div>
+
+<div id="modal-terminate" class="modal-backdrop" style="display:none;"><div class="modal">
+  <h3>🗄 Archive employee</h3>
+  <p id="terminate-detail">Mark as terminated and archive. They can no longer log into the form.</p>
+  <div class="modal-field"><label>Termination date</label><input type="date" id="terminate-date"></div>
+  <div class="modal-field">
+    <label>PTO payout at termination ($)</label>
+    <input type="number" id="terminate-payout" step="0.01" min="0" readonly style="background:var(--gray-50);">
+    <div style="font-size:11px;color:var(--gray-500);margin-top:3px;" id="terminate-payout-note"></div>
+  </div>
+  <div class="modal-err" id="terminate-err"></div>
+  <div class="modal-actions">
+    <button class="btn-deny" style="flex:1;height:36px;font-size:13px;font-weight:600;" onclick="confirmTerminate()">Confirm archive</button>
+    <button class="btn-secondary" onclick="closeModal('modal-terminate')">Cancel</button>
+  </div>
+</div></div>
+
+<div id="modal-retainer" class="modal-backdrop" style="display:none;"><div class="modal" style="max-width:460px;">
+  <h3 id="ret-title">Add retainer pay</h3>
+  <div class="two-col">
+    <div class="modal-field"><label>ID</label><input type="text" id="ret-id" placeholder="RET001"></div>
+    <div class="modal-field"><label>Relationship</label>
+      <select id="ret-rel"><option>Owner</option><option>Spouse</option><option>Child</option><option>Family</option><option>Other</option></select>
+    </div>
+  </div>
+  <div class="modal-field"><label>Full name</label><input type="text" id="ret-name" placeholder="David Lee"></div>
+  <div class="two-col">
+    <div class="modal-field"><label>Amount per period ($)</label><input type="number" id="ret-amount" step="0.01" min="0" placeholder="2000.00"></div>
+    <div class="modal-field"><label>Hire date</label><input type="date" id="ret-hire"></div>
+  </div>
+  <div class="modal-field"><label>Notes</label><textarea id="ret-notes" rows="2"></textarea></div>
+  <div class="modal-err" id="ret-err"></div>
+  <div class="modal-actions">
+    <button class="btn-primary" onclick="saveRetainer()" style="flex:1;">Save</button>
+    <button class="btn-secondary" onclick="closeModal('modal-retainer')">Cancel</button>
+  </div>
+  <div id="ret-archive-row" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--gray-100);">
+    <button class="btn-deny" style="width:100%;height:34px;font-size:13px;font-weight:600;" onclick="terminateRetainer()">🗄 Archive</button>
+  </div>
+</div></div>
+
+<div id="modal-dismiss-reminder" class="modal-backdrop" style="display:none;"><div class="modal">
+  <h3>Dismiss reminder</h3><p id="dismiss-detail"></p>
+  <div class="modal-field"><label>Your name</label><input type="text" id="dismiss-by" placeholder="e.g. David Lee"></div>
+  <div class="modal-actions">
+    <button class="btn-primary" onclick="confirmDismiss()" style="flex:1;">Dismiss</button>
+    <button class="btn-secondary" onclick="closeModal('modal-dismiss-reminder')">Cancel</button>
+  </div>
+</div></div>
+
+<!-- New Year Reset -->
+<div id="modal-new-year-reset" class="modal-backdrop" style="display:none;"><div class="modal" style="max-width:640px;">
+  <h3>🗓 New Year PTO Reset</h3>
+  <p>Review every active employee before resetting. Anyone with a negative vacation balance will carry that debt forward into the new year automatically — nothing is silently forgiven.</p>
+  <div class="modal-field">
+    <label>Reset year</label>
+    <input type="number" id="nyr-year" style="width:120px;">
+  </div>
+  <div class="overflow-x" style="max-height:360px;overflow-y:auto;border:1px solid var(--gray-200);border-radius:8px;margin-bottom:1rem;">
+    <table style="min-width:auto;">
+      <thead><tr>
+        <th>Employee</th>
+        <th class="right">Current sick</th>
+        <th class="right">Current vacation</th>
+        <th class="right">New sick bank</th>
+        <th class="right">New vacation bank</th>
+        <th class="right">Carries forward</th>
+      </tr></thead>
+      <tbody id="nyr-tbody"></tbody>
+    </table>
+  </div>
+  <div class="modal-err" id="nyr-err"></div>
+  <div class="modal-field"><label>Your name (performing reset)</label><input type="text" id="nyr-by" placeholder="e.g. David Lee"></div>
+  <div class="modal-actions">
+    <button class="btn-primary" onclick="confirmNewYearReset()" style="flex:1;background:var(--navy-mid);">Confirm reset for all employees</button>
+    <button class="btn-secondary" onclick="closeModal('modal-new-year-reset')">Cancel</button>
+  </div>
+</div></div>
+
+<!-- Employee Review Summary -->
+<div id="modal-review-summary" class="modal-backdrop" style="display:none;"><div class="modal" style="max-width:520px;">
+  <h3>📄 Employee review summary</h3>
+  <p>Pull a quick summary of attendance and overtime for one employee over a date range — handy for performance reviews.</p>
+
+  <div class="modal-field">
+    <label>Employee</label>
+    <div class="search-select-wrap" id="rs-emp-wrap">
+      <input type="text" class="search-select-input" id="rs-emp-search" placeholder="Search by name..." oninput="filterRsEmpDropdown(this.value)" onfocus="openRsEmpDropdown()" autocomplete="off">
+      <input type="hidden" id="rs-emp">
+      <div class="search-select-dropdown" id="rs-emp-dropdown"></div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="modal-field"><label>From</label><input type="date" id="rs-start"></div>
+    <div class="modal-field"><label>To</label><input type="date" id="rs-end"></div>
+  </div>
+
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem;">
+    <button type="button" class="mgr-quick-btn" onclick="setRsRange('30')">Last 30 days</button>
+    <button type="button" class="mgr-quick-btn" onclick="setRsRange('90')">Last 90 days</button>
+    <button type="button" class="mgr-quick-btn" onclick="setRsRange('ytd')">Year to date</button>
+    <button type="button" class="mgr-quick-btn" onclick="setRsRange('year')">Full last 12 months</button>
+  </div>
+
+  <button class="btn-primary" onclick="generateReviewSummary()" style="width:100%;margin-bottom:1rem;">Generate summary</button>
+
+  <div id="rs-results" style="display:none;">
+    <div style="background:var(--steel-bg);border:1px solid var(--steel-light);border-radius:10px;padding:14px 16px;margin-bottom:1rem;">
+      <div id="rs-emp-name" style="font-weight:700;color:var(--navy);font-size:15px;margin-bottom:2px;"></div>
+      <div id="rs-date-range" style="font-size:12px;color:var(--gray-500);margin-bottom:12px;"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-500);">Tardies</div>
+          <div id="rs-late-count" style="font-size:22px;font-weight:700;color:var(--navy);"></div>
+          <div id="rs-late-detail" style="font-size:11px;color:var(--gray-500);"></div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-500);">Late lunches</div>
+          <div id="rs-lunch-count" style="font-size:22px;font-weight:700;color:var(--navy);"></div>
+          <div id="rs-lunch-detail" style="font-size:11px;color:var(--gray-500);"></div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-500);">Meal duration violations</div>
+          <div id="rs-meal-count" style="font-size:22px;font-weight:700;color:var(--navy);"></div>
+          <div id="rs-meal-detail" style="font-size:11px;color:var(--gray-500);"></div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-500);">Overtime logged</div>
+          <div id="rs-ot-hours" style="font-size:22px;font-weight:700;color:var(--navy);"></div>
+          <div id="rs-ot-detail" style="font-size:11px;color:var(--gray-500);"></div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-500);">Unexcused absences</div>
+          <div id="rs-abs-count" style="font-size:22px;font-weight:700;color:var(--navy);"></div>
+          <div id="rs-abs-detail" style="font-size:11px;color:var(--gray-500);"></div>
+        </div>
+      </div>
+    </div>
+    <div id="rs-detail-list"></div>
+  </div>
+
+  <div class="modal-actions">
+    <button class="btn-secondary" onclick="closeModal('modal-review-summary')" style="flex:1;">Close</button>
+    <button class="btn-primary" id="rs-export-btn" onclick="exportReviewSummary()" style="display:none;">⬇ Export as PDF-ready text</button>
+  </div>
+</div></div>
+<!-- Toast notification -->
+<div id="toast" class="toast"></div>
+
+<script>
+// ── STATE ─────────────────────────────────
+let db=null;
+let allRequests=[],allEmployees=[],allRetainers=[],allAbsences=[],allReminders=[];
+let pendingActionId=null,editingEmpId=null,editingRetainerId=null,terminatingEmpId=null,editingBalId=null,dismissingRemId=null;
+let calYear=new Date().getFullYear(),calMonth=new Date().getMonth();
+let empSort='name',empDir=1,empFilter='active',empSearch='';
+let balSearch='';
+let remFilter='all',histFilter='all',histSearch='';
+let tcRows=[],punchData={},punchAdj={},currentPPStep=1,editingPunchKey=null,addPunchEmpId=null;
+let editingHistoryId=null,mgrLogDirty=false,mgrEmpOptions=[];
+
+// ── TOAST ─────────────────────────────────
+let toastTimer=null;
+function showToast(msg,type='success'){
+  const el=document.getElementById('toast');
+  el.className='toast '+(type==='success'?'success':type==='error'?'error':'');
+  el.innerHTML=(type==='success'?'✓ ':type==='error'?'✕ ':'ℹ ')+msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),3200);
+}
+
+// ── SEARCHABLE EMPLOYEE DROPDOWN ──────────
+function buildMgrEmpOptions(){
+  mgrEmpOptions=allEmployees.filter(e=>!e.terminated).map(e=>({id:e.id,name:e.name})).sort((a,b)=>a.name.localeCompare(b.name));
+}
+function openMgrEmpDropdown(){
+  filterMgrEmpDropdown(document.getElementById('mgr-emp-search').value);
+  document.getElementById('mgr-emp-dropdown').classList.add('open');
+}
+function filterMgrEmpDropdown(q){
+  const dd=document.getElementById('mgr-emp-dropdown');
+  const filtered=q?mgrEmpOptions.filter(o=>o.name.toLowerCase().includes(q.toLowerCase())):mgrEmpOptions;
+  if(!filtered.length){dd.innerHTML='<div class="search-select-option no-results">No employees found</div>';dd.classList.add('open');return;}
+  dd.innerHTML=filtered.map(o=>`<div class="search-select-option" onmousedown="selectMgrEmp('${o.id}','${o.name.replace(/'/g,"\\'")}')">${o.name} <span style="font-size:11px;color:var(--gray-400);">${o.id}</span></div>`).join('');
+  dd.classList.add('open');
+}
+function selectMgrEmp(id,name){
+  document.getElementById('mgr-log-emp').value=id;
+  document.getElementById('mgr-emp-search').value=name;
+  document.getElementById('mgr-emp-dropdown').classList.remove('open');
+  mgrLogDirty=true;
+}
+document.addEventListener('click',e=>{
+  if(!document.getElementById('mgr-emp-wrap')?.contains(e.target)){
+    document.getElementById('mgr-emp-dropdown')?.classList.remove('open');
+  }
+});
+
+// ── SEARCHABLE EMPLOYEE DROPDOWN (Absence modal) ──
+let absEmpOptions=[];
+function buildAbsEmpOptions(){
+  absEmpOptions=allEmployees.filter(e=>!e.terminated).map(e=>({id:e.id,name:e.name})).sort((a,b)=>a.name.localeCompare(b.name));
+}
+function openAbsEmpDropdown(){
+  filterAbsEmpDropdown(document.getElementById('abs-emp-search').value);
+  document.getElementById('abs-emp-dropdown').classList.add('open');
+}
+function filterAbsEmpDropdown(q){
+  const dd=document.getElementById('abs-emp-dropdown');
+  const filtered=q?absEmpOptions.filter(o=>o.name.toLowerCase().includes(q.toLowerCase())):absEmpOptions;
+  if(!filtered.length){dd.innerHTML='<div class="search-select-option no-results">No employees found</div>';dd.classList.add('open');return;}
+  dd.innerHTML=filtered.map(o=>`<div class="search-select-option" onmousedown="selectAbsEmp('${o.id}','${o.name.replace(/'/g,"\\'")}')">${o.name} <span style="font-size:11px;color:var(--gray-400);">${o.id}</span></div>`).join('');
+  dd.classList.add('open');
+}
+function selectAbsEmp(id,name){
+  document.getElementById('abs-emp').value=id;
+  document.getElementById('abs-emp-search').value=name;
+  document.getElementById('abs-emp-dropdown').classList.remove('open');
+}
+document.addEventListener('click',e=>{
+  if(!document.getElementById('abs-emp-wrap')?.contains(e.target)){
+    document.getElementById('abs-emp-dropdown')?.classList.remove('open');
+  }
+});
+
+// ── UNSAVED CHANGES WARNING ────────────────
+// Intercept backdrop clicks on modals that have dirty state
+function closeMgrLogModal(){
+  if(mgrLogDirty){
+    if(!confirm('You have unsaved changes. Close without saving?'))return;
+  }
+  mgrLogDirty=false;
+  closeModal('modal-mgr-log');
+}
+// Wire dirty detection to mgr log form fields (called after DOM ready)
+function wireMgrLogDirty(){
+  // Date fields use 'change' (fires when complete) not 'input' (fires mid-typing)
+  ['mgr-log-start','mgr-log-end'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.addEventListener('change',()=>{mgrLogDirty=true;});
+  });
+  ['mgr-log-by','mgr-log-notes','mgr-partial-hrs','mgr-partial-detail','mgr-split-sick','mgr-split-vac','mgr-split-unpaid','mgr-split-paid'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.addEventListener('input',()=>{mgrLogDirty=true;});
+  });
+  // Override backdrop click for mgr log modal specifically
+  document.getElementById('modal-mgr-log').addEventListener('click',e=>{
+    if(e.target===document.getElementById('modal-mgr-log'))closeMgrLogModal();
+  });
+}
+document.addEventListener('DOMContentLoaded',wireMgrLogDirty);
+const HOL={2025:['2025-01-01','2025-05-26','2025-07-04','2025-09-01','2025-11-27','2025-12-25'],2026:['2026-01-01','2026-05-25','2026-07-03','2026-09-07','2026-11-26','2026-12-25']};
+const HOL_NAMES={'2025-01-01':"New Year's Day",'2025-05-26':'Memorial Day','2025-07-04':'Independence Day','2025-09-01':'Labor Day','2025-11-27':'Thanksgiving','2025-12-25':'Christmas Day','2026-01-01':"New Year's Day",'2026-05-25':'Memorial Day','2026-07-03':'Independence Day (obs)','2026-09-07':'Labor Day','2026-11-26':'Thanksgiving','2026-12-25':'Christmas Day'};
+
+// ── UTILS ─────────────────────────────────
+const fmt=(d,opts)=>d?new Date(typeof d==='string'?d+'T12:00:00':d).toLocaleDateString('en-US',opts||{month:'short',day:'numeric',year:'numeric'}):'—';
+const fmtShort=d=>fmt(d,{month:'short',day:'numeric'});
+// Uses local date components (not toISOString/UTC) so "today" and other dates
+// never shift by a day depending on timezone and time of day.
+const fmt8601=d=>{
+  if(!(d instanceof Date))return d||'';
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,'0');
+  const day=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+};
+const fmtMoney=n=>'$'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+const fmtH=n=>(+n||0).toFixed(1)+'h';
+function parseMin(s){if(!s||!s.trim())return 0;const p=s.trim().split(':').map(Number);return p[0]*60+(p[1]||0)+Math.round((p[2]||0)/60);}
+function minToHM(m){const h=Math.floor(m/60),mn=Math.round(m%60);return`${h}:${String(mn).padStart(2,'0')}`;}
+function isWknd(d){const dow=new Date(d+'T12:00:00').getDay();return dow===0||dow===6;}
+function isHol(d){return(HOL[d.slice(0,4)]||[]).includes(d);}
+function isWorkday(d){return!isWknd(d)&&!isHol(d);}
+function countWorkdays(s,e){let c=0,d=new Date(s+'T12:00:00'),en=new Date(e+'T12:00:00');while(d<=en){if(isWorkday(fmt8601(d)))c++;d.setDate(d.getDate()+1);}return c;}
+function dlCSV(rows,fn){const csv=rows.map(r=>r.map(v=>`"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+csv],{type:'text/csv'}));a.download=fn;a.click();}
+function dlXLSX(wsData,sheetName,fn){const wb=XLSX.utils.book_new();const ws=XLSX.utils.aoa_to_sheet(wsData);XLSX.utils.book_append_sheet(wb,ws,sheetName);XLSX.writeFile(wb,fn);}
+
+// ── AUTH ──────────────────────────────────
+function login(){
+  const pw=document.getElementById('mgr-password').value;
+  const skInput=document.getElementById('service-key').value.trim();
+  const sk=(skInput&&skInput.startsWith('eyJ'))?skInput:(RMS_CONFIG.supabase_service_role_key&&!RMS_CONFIG.supabase_service_role_key.includes('YOUR_')?RMS_CONFIG.supabase_service_role_key:'');
+  const err=document.getElementById('login-err');
+  if(!pw||pw!==RMS_CONFIG.manager_password){err.textContent='Incorrect password.';err.classList.add('show');return;}
+  if(!sk||!sk.startsWith('eyJ')){err.textContent='Please enter your Supabase service role key.';err.classList.add('show');return;}
+  try{db=supabase.createClient(RMS_CONFIG.supabase_url,sk);}
+  catch(e){err.textContent='Connection error: '+e.message;err.classList.add('show');return;}
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app-screen').style.display='block';
+  setSemimonthlyDates();
+  loadAll();
+}
+
+// On page load: hide service key field if key is already in config
+(function initLogin(){
+  const hasKey=typeof RMS_CONFIG!=='undefined'&&RMS_CONFIG.supabase_service_role_key&&!RMS_CONFIG.supabase_service_role_key.includes('YOUR_');
+  if(hasKey){
+    const row=document.getElementById('service-key').closest('.login-field');
+    row.style.display='none';
+  }
+})();
+function logout(){db=null;document.getElementById('login-screen').style.display='flex';document.getElementById('app-screen').style.display='none';document.getElementById('mgr-password').value='';document.getElementById('service-key').value='';}
+
+// ── DATES ─────────────────────────────────
+function setSemimonthlyDates(){
+  const t=new Date(),d=t.getDate(),y=t.getFullYear(),m=t.getMonth();
+  let s,e;
+  if(d<=15){s=new Date(y,m,1);e=new Date(y,m,15);}
+  else{s=new Date(y,m,16);e=new Date(y,m+1,0);}
+  document.getElementById('pp-start').value=fmt8601(s);
+  document.getElementById('pp-end').value=fmt8601(e);
+}
+
+// ── LOAD ──────────────────────────────────
+async function loadAll(){
+  await Promise.all([loadRequests(),loadEmployees(),loadRetainers(),loadAbsences(),loadReminders(),loadAttendance()]);
+  renderPending();renderBalances();renderCalendar();renderHistory();
+  renderEmployees();renderRetainers();renderReminders();
+  checkAndSendReminders();
+}
+async function loadRequests(){const{data}=await db.from('pto_requests').select('*').order('submitted_at',{ascending:false});allRequests=data||[];const p=allRequests.filter(r=>r.status==='pending').length;const el=document.getElementById('pending-count');el.textContent=p;el.style.display=p>0?'inline-block':'none';}
+async function loadEmployees(){const{data}=await db.from('employees').select('*').order('name');allEmployees=data||[];}
+async function loadRetainers(){const{data}=await db.from('retainer_employees').select('*').order('name');allRetainers=data||[];}
+async function loadAbsences(){const{data}=await db.from('absence_records').select('*').order('absence_date',{ascending:false});allAbsences=data||[];}
+async function loadReminders(){const{data}=await db.from('anniversary_reminders').select('*').order('due_date');allReminders=data||[];const p=allReminders.filter(r=>r.email_status!=='dismissed'&&new Date(r.due_date+'T12:00:00')<=new Date(Date.now()+14*86400000)).length;const el=document.getElementById('reminder-badge');el.textContent=p;el.style.display=p>0?'inline-block':'none';}
+
+// ── HOURS OVERRIDE ────────────────────────
+function toggleMgrHoursOverride(){
+  const checked=document.getElementById('mgr-hours-override').checked;
+  const field=document.getElementById('mgr-override-field');
+  field.style.display=checked?'block':'none';
+  if(!checked){
+    document.getElementById('mgr-override-hrs').value='';
+    applyMgrHoursOverride();
+  }
+}
+// Clears the bank allocation whenever the target total hours changes,
+// so stale numbers from a previous state can never silently mismatch
+// the new target. Forces a clean re-pick every time.
+function resetMgrBankSelection(){
+  document.getElementById('mgr-split-sick').value='0';
+  document.getElementById('mgr-split-vac').value='0';
+  document.getElementById('mgr-split-unpaid').value='0';
+  document.getElementById('mgr-split-paid').value='0';
+  document.querySelectorAll('.mgr-choice-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('mgr-coverage-warn').style.display='none';
+}
+
+function applyMgrHoursOverride(){
+  const overrideEl=document.getElementById('mgr-override-hrs');
+  const ov=parseFloat(overrideEl.value);
+  const isPartial=document.getElementById('mgr-partial').checked;
+  const start=document.getElementById('mgr-log-start').value;
+  const end=document.getElementById('mgr-log-end').value;
+  if(!start||!end)return;
+  const maxH=isPartial?(parseFloat(document.getElementById('mgr-partial-hrs').value)||0):countWorkdays(start,end)*8;
+  const prevTotal=mgrTotalHours;
+  if(ov>0&&ov<=maxH){
+    mgrTotalHours=ov;
+    const noteEl=document.getElementById('mgr-override-note');
+    noteEl.textContent=`Using ${ov}h of ${maxH}h maximum for this date range.`;
+    noteEl.style.color='var(--green)';
+    document.getElementById('mgr-hours-text').textContent=`${ov}h — custom (max ${maxH}h)`;
+  } else if(ov>maxH){
+    document.getElementById('mgr-override-note').textContent=`Can't exceed ${maxH}h for this date range.`;
+    document.getElementById('mgr-override-note').style.color='var(--red)';
+  } else {
+    mgrTotalHours=maxH;
+    document.getElementById('mgr-hours-text').textContent=document.getElementById('mgr-hours-text').dataset.auto||document.getElementById('mgr-hours-text').textContent;
+  }
+  if(mgrTotalHours!==prevTotal)resetMgrBankSelection();
+  updateMgrSplitTotal();
+}
+
+// ── ATTENDANCE TRACKER ────────────────────
+let allAttendance=[];
+let attendanceFilter='all',attendanceSearch='',attendanceDetailEmpId=null;
+
+async function loadAttendance(){
+  const{data}=await db.from('attendance_records').select('*').order('record_date',{ascending:false});
+  allAttendance=data||[];
+  const issues=allAttendance.filter(r=>r.is_late||r.late_lunch||r.ot_1_5_minutes>0).length;
+  const el=document.getElementById('attendance-badge');
+  el.textContent=issues;el.style.display=issues>0?'inline-block':'none';
+  // Populate period filter
+  const periods=[...new Set(allAttendance.map(r=>r.pay_period_start))].sort().reverse();
+  const sel=document.getElementById('attendance-period-filter');
+  const cur=sel.value;
+  sel.innerHTML='<option value="all">All pay periods</option>'+periods.map(p=>`<option value="${p}" ${cur===p?'selected':''}>${fmtShort(p)} period</option>`).join('');
+}
+
+function getScheduledStart(empId){
+  const prefix=empId?empId[0].toUpperCase():'O';
+  if(prefix==='R')return'09:00:00';
+  if(prefix==='D')return'08:15:00';
+  return'08:30:00';
+}
+
+function parseAttendanceFromCSV(rows,ppStart,ppEnd){
+  // Called after CSV is loaded — analyze each non-salaried row for violations
+  const records=[];
+  const ppRows=rows.filter(row=>{
+    const iso=mmddyyyy_to_iso(row.date);
+    return iso&&iso>=ppStart&&iso<=ppEnd&&!isWknd(iso)&&!isHol(iso);
+  });
+  ppRows.forEach(row=>{
+    const iso=mmddyyyy_to_iso(row.date);
+    const isSal=row.timesheet.toLowerCase().includes('salary');
+    const scheduledStr=getScheduledStart(row.personId);
+    const schedMin=timeStrToMin(scheduledStr);
+    const actualIn=row.clockIn1?timeStrToMin(row.clockIn1):null;
+    const lateMin=actualIn!==null?Math.max(0,actualIn-schedMin-5):0; // 5 min grace
+    const isLate=lateMin>0;
+    // Lunch — first clock-out
+    const lunchOut=row.clockOut1?timeStrToMin(row.clockOut1):null;
+    const deadlineMin=actualIn!==null?actualIn+(5*60):schedMin+(5*60); // 5h after clock in
+    const lateLunch=!isSal&&lunchOut!==null&&lunchOut>deadlineMin;
+    const lateLunchMin=lateLunch?Math.round(lunchOut-deadlineMin):0;
+    // Lunch duration — uses the time clock's own "Total Break Time" column as authoritative
+    const breakMin=parseMin(row.totalBreak);
+    const hasBreakData=!isSal&&row.totalBreak&&row.totalBreak.trim();
+    const lunchTooShort=hasBreakData&&breakMin>0&&breakMin<30;
+    const lunchTooLong=hasBreakData&&breakMin>60;
+    // OT
+    const totalWorkedMin=parseMin(row.totalWork);
+    const ot15Min=Math.max(0,Math.min(totalWorkedMin,12*60)-8*60);
+    const ot2Min=Math.max(0,totalWorkedMin-12*60);
+    records.push({
+      employee_id:row.personId,
+      record_date:iso,
+      pay_period_start:ppStart,
+      scheduled_start:scheduledStr,
+      actual_start:row.clockIn1||null,
+      late_minutes:lateMin,
+      is_late:isLate,
+      lunch_start:row.clockOut1||null,
+      lunch_hour:lunchOut?Math.floor(lunchOut/60):null,
+      late_lunch:lateLunch,
+      late_lunch_minutes:lateLunchMin,
+      lunch_duration_minutes:hasBreakData?breakMin:null,
+      lunch_too_short:lunchTooShort,
+      lunch_too_long:lunchTooLong,
+      total_worked_minutes:totalWorkedMin,
+      ot_1_5_minutes:isSal?0:ot15Min,
+      ot_2x_minutes:isSal?0:ot2Min,
+      is_salaried:isSal,
+    });
+  });
+  return records;
+}
+
+function timeStrToMin(s){
+  if(!s)return 0;
+  const p=s.split(':').map(Number);
+  return p[0]*60+(p[1]||0);
+}
+
+async function saveAttendanceFromPayroll(records){
+  if(!records.length)return;
+  // Upsert — replace existing records for same employee+date+period
+  const{error}=await db.from('attendance_records').upsert(records,{onConflict:'employee_id,record_date,pay_period_start'});
+  if(error)console.warn('Attendance save error:',error.message);
+  await loadAttendance();
+  renderAttendance();
+}
+
+function setAttendanceFilter(f,btn){attendanceFilter=f;document.querySelectorAll('#pane-attendance .filter-chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderAttendance();}
+function filterAttendance(q){attendanceSearch=q.toLowerCase();renderAttendance();}
+
+function renderAttendance(){
+  const period=document.getElementById('attendance-period-filter').value;
+  let recs=[...allAttendance];
+  if(period!=='all')recs=recs.filter(r=>r.pay_period_start===period);
+  if(attendanceSearch)recs=recs.filter(r=>(r.employee_id+(allEmployees.find(e=>e.id===r.employee_id)?.name||'')).toLowerCase().includes(attendanceSearch));
+
+  // Aggregate by employee
+  const empMap={};
+  recs.forEach(r=>{
+    if(!empMap[r.employee_id])empMap[r.employee_id]={id:r.employee_id,lateCount:0,totalLateMin:0,lateLunchCount:0,mealViolationCount:0,otDays:0,totalOTMin:0,lastIncident:null};
+    const e=empMap[r.employee_id];
+    if(r.is_late){e.lateCount++;e.totalLateMin+=r.late_minutes||0;}
+    if(r.late_lunch)e.lateLunchCount++;
+    if(r.lunch_too_short||r.lunch_too_long)e.mealViolationCount++;
+    if((r.ot_1_5_minutes||0)+(r.ot_2x_minutes||0)>0){e.otDays++;e.totalOTMin+=(r.ot_1_5_minutes||0)+(r.ot_2x_minutes||0);}
+    if(!e.lastIncident||(r.is_late||r.late_lunch||r.lunch_too_short||r.lunch_too_long||r.ot_1_5_minutes>0)){if(!e.lastIncident||r.record_date>e.lastIncident)e.lastIncident=r.record_date;}
+  });
+
+  // Filter by type
+  let empList=Object.values(empMap);
+  if(attendanceFilter==='late')empList=empList.filter(e=>e.lateCount>0);
+  else if(attendanceFilter==='lunch')empList=empList.filter(e=>e.lateLunchCount>0);
+  else if(attendanceFilter==='meal')empList=empList.filter(e=>e.mealViolationCount>0);
+  else if(attendanceFilter==='ot')empList=empList.filter(e=>e.otDays>0);
+  empList.sort((a,b)=>(b.lateCount+b.lateLunchCount+b.mealViolationCount)-(a.lateCount+a.lateLunchCount+a.mealViolationCount));
+
+  // KPIs
+  const totalLate=Object.values(empMap).reduce((s,e)=>s+e.lateCount,0);
+  const totalLateLunch=Object.values(empMap).reduce((s,e)=>s+e.lateLunchCount,0);
+  const totalMealViol=Object.values(empMap).reduce((s,e)=>s+e.mealViolationCount,0);
+  const totalOTH=Object.values(empMap).reduce((s,e)=>s+e.totalOTMin,0)/60;
+  const atRisk=Object.values(empMap).filter(e=>e.lateCount>=3||e.lateLunchCount>=3||e.mealViolationCount>=3).length;
+  document.getElementById('attendance-kpis').innerHTML=`
+    <div class="kpi ${totalLate>0?'warn':'success'}"><div class="kpi-val">${totalLate}</div><div class="kpi-lbl">Late arrivals (period)</div></div>
+    <div class="kpi ${totalLateLunch>0?'warn':'success'}"><div class="kpi-val">${totalLateLunch}</div><div class="kpi-lbl">Late lunches</div></div>
+    <div class="kpi ${totalMealViol>0?'danger':'success'}"><div class="kpi-val">${totalMealViol}</div><div class="kpi-lbl">Meal duration violations</div></div>
+    <div class="kpi info"><div class="kpi-val">${totalOTH.toFixed(1)}h</div><div class="kpi-lbl">Overtime hours</div></div>
+    <div class="kpi ${atRisk>0?'danger':'success'}"><div class="kpi-val">${atRisk}</div><div class="kpi-lbl">At risk (3+ incidents)</div></div>`;
+
+  let html='';
+  if(!empList.length)html='<tr><td colspan="9" class="empty">No attendance data yet. Upload a payroll CSV to populate.</td></tr>';
+  empList.forEach(e=>{
+    const emp=allEmployees.find(emp=>emp.id===e.id);
+    const isRisk=e.lateCount>=3||e.lateLunchCount>=3||e.mealViolationCount>=3;
+    html+=`<tr style="${isRisk?'background:#fffbeb;':''}">
+      <td><div class="emp-name">${emp?.name||e.id}</div><div class="emp-id">${e.id}</div></td>
+      <td class="right"><strong style="color:${e.lateCount>=3?'var(--red)':e.lateCount>=1?'var(--amber)':'inherit'}">${e.lateCount}</strong></td>
+      <td class="right">${e.totalLateMin>0?e.totalLateMin+'m':'—'}</td>
+      <td class="right"><strong style="color:${e.lateLunchCount>=3?'var(--red)':e.lateLunchCount>=1?'var(--amber)':'inherit'}">${e.lateLunchCount}</strong></td>
+      <td class="right"><strong style="color:${e.mealViolationCount>=1?'var(--red)':'inherit'}">${e.mealViolationCount}</strong></td>
+      <td class="right">${e.otDays}</td>
+      <td class="right">${e.totalOTMin>0?(e.totalOTMin/60).toFixed(1)+'h':'—'}</td>
+      <td style="font-size:12px;color:var(--gray-500);">${e.lastIncident?fmtShort(e.lastIncident):'—'}</td>
+      <td><button class="btn-sm" onclick="showAttendanceDetail('${e.id}')">Details</button></td>
+    </tr>`;
+  });
+  document.getElementById('attendance-tbody').innerHTML=html;
+}
+
+function showAttendanceDetail(empId){
+  const emp=allEmployees.find(e=>e.id===empId);
+  document.getElementById('attendance-detail-name').textContent=`${emp?.name||empId} — Attendance detail`;
+  const recs=allAttendance.filter(r=>r.employee_id===empId).sort((a,b)=>b.record_date.localeCompare(a.record_date));
+  let html='';
+  if(!recs.length)html='<tr><td colspan="11" class="empty">No records.</td></tr>';
+  recs.forEach(r=>{
+    const isIssue=r.is_late||r.late_lunch||r.lunch_too_short||r.lunch_too_long||(r.ot_1_5_minutes||0)>0;
+    let lunchDurationCell='—';
+    if(r.lunch_duration_minutes!==null&&r.lunch_duration_minutes!==undefined){
+      const durColor=r.lunch_too_short?'var(--red)':r.lunch_too_long?'var(--amber)':'inherit';
+      const durLabel=r.lunch_too_short?' (short)':r.lunch_too_long?' (long)':'';
+      lunchDurationCell=`<span style="color:${durColor};font-weight:${r.lunch_too_short||r.lunch_too_long?'700':'400'};">${r.lunch_duration_minutes}m${durLabel}</span>`;
+    }
+    html+=`<tr style="${isIssue?'background:#fffbeb;':''}">
+      <td><strong>${fmtShort(r.record_date)}</strong></td>
+      <td style="font-size:12px;color:var(--gray-500);">${r.pay_period_start?fmtShort(r.pay_period_start):'—'}</td>
+      <td style="font-family:monospace;font-size:12px;">${r.scheduled_start?r.scheduled_start.slice(0,5):'—'}</td>
+      <td style="font-family:monospace;font-size:12px;color:${r.is_late?'var(--red)':'inherit'}">${r.actual_start?r.actual_start.slice(0,5):'—'}</td>
+      <td class="right" style="color:${r.is_late?'var(--red)':'inherit'}">${r.is_late?`${r.late_minutes}m late`:'On time'}</td>
+      <td style="font-family:monospace;font-size:12px;">${r.lunch_start?r.lunch_start.slice(0,5):'—'}</td>
+      <td style="color:${r.late_lunch?'var(--amber)':'inherit'}">${r.late_lunch?`${r.late_lunch_minutes}m late`:'OK'}</td>
+      <td class="right">${lunchDurationCell}</td>
+      <td class="right">${r.total_worked_minutes?(r.total_worked_minutes/60).toFixed(2)+'h':'—'}</td>
+      <td class="right" style="color:${r.ot_1_5_minutes>0?'var(--amber)':'inherit'}">${r.ot_1_5_minutes>0?(r.ot_1_5_minutes/60).toFixed(2)+'h':'—'}</td>
+      <td class="right" style="color:${r.ot_2x_minutes>0?'var(--red)':'inherit'}">${r.ot_2x_minutes>0?(r.ot_2x_minutes/60).toFixed(2)+'h':'—'}</td>
+    </tr>`;
+  });
+  document.getElementById('attendance-detail-tbody').innerHTML=html;
+  document.getElementById('attendance-detail').style.display='block';
+  document.getElementById('attendance-detail').scrollIntoView({behavior:'smooth'});
+}
+
+function exportAttendance(){
+  const hdr=['Employee ID','Name','Date','Pay Period','Scheduled Start','Actual Start','Late (min)','Lunch Start','Late Lunch','Late Lunch (min)','Meal Duration (min)','Meal Too Short (<30m)','Meal Too Long (>60m)','Total Worked (h)','OT 1.5x (h)','OT 2x (h)'];
+  const rows=allAttendance.map(r=>{
+    const emp=allEmployees.find(e=>e.id===r.employee_id);
+    return[r.employee_id,emp?.name||'',r.record_date,r.pay_period_start,r.scheduled_start||'',r.actual_start||'',r.late_minutes||0,r.lunch_start||'',r.late_lunch?'Yes':'No',r.late_lunch_minutes||0,r.lunch_duration_minutes??'',r.lunch_too_short?'Yes':'No',r.lunch_too_long?'Yes':'No',(r.total_worked_minutes/60).toFixed(2),(r.ot_1_5_minutes/60).toFixed(2),(r.ot_2x_minutes/60).toFixed(2)];
+  });
+  dlXLSX([hdr,...rows],'Attendance',`RMS_Attendance_${new Date().toISOString().slice(0,10)}.xlsx`);
+}
+
+// ── PANE / MODAL ──────────────────────────
+function showPane(id,btn){document.querySelectorAll('.pane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));document.getElementById('pane-'+id).classList.add('active');if(btn)btn.classList.add('active');if(id==='calendar')renderCalendar();if(id==='attendance')renderAttendance();}
+function closeModal(id){document.getElementById(id).style.display='none';}
+document.querySelectorAll('.modal-backdrop').forEach(b=>{
+  // modal-mgr-log has its own dirty-check handler — skip it here
+  if(b.id==='modal-mgr-log')return;
+  b.addEventListener('click',e=>{if(e.target===b)b.style.display='none';});
+});
+
+// ── PENDING ───────────────────────────────
+function renderPending(){
+  const pend=allRequests.filter(r=>r.status==='pending');
+  const el=document.getElementById('pending-list');
+  if(!pend.length){el.innerHTML='<div class="empty">✅ No pending requests.</div>';return;}
+  const approved=allRequests.filter(r=>r.status==='approved');
+  el.innerHTML=pend.map(r=>{
+    const daysSince=Math.round((Date.now()-new Date(r.submitted_at))/86400000);
+    const bankLabel=r.request_type==='sick'?'🤒 Sick':r.request_type==='vacation'?'✈️ Vacation':r.request_type==='mixed'?`🔀 Split (${r.sick_hours}h sick + ${r.vacation_hours}h vac)`:'📋 Unpaid excused';
+
+    // Who else is already approved off overlapping these dates?
+    const overlap=approved.filter(a=>{
+      if(a.employee_id===r.employee_id)return false;
+      return a.start_date<=r.end_date&&a.end_date>=r.start_date;
+    });
+    const overlapNames=[...new Set(overlap.map(a=>{
+      const emp=allEmployees.find(e=>e.id===a.employee_id);
+      return emp?.name||a.employee_name;
+    }))];
+    const overlapHtml=overlapNames.length
+      ?`<div style="margin-top:10px;padding:10px 12px;background:var(--steel-bg);border:1px solid var(--steel-light);border-radius:var(--radius);">
+          <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-500);margin-bottom:6px;">Already off these dates (${overlapNames.length})</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;">${overlapNames.map(n=>`<span class="badge vacation">${n}</span>`).join('')}</div>
+        </div>`
+      :`<div style="margin-top:10px;padding:8px 12px;background:var(--green-bg);border:1px solid #86efac;border-radius:var(--radius);font-size:12px;color:var(--green);">✓ No one else is approved off on these dates</div>`;
+
+    return`<div class="card" style="margin-bottom:12px;">
+      <div class="card-title"><div><strong>${r.employee_name}</strong> &nbsp;<span class="badge ${r.request_type}">${bankLabel}</span>${r.requires_approval?'&nbsp;<span class="badge" style="background:var(--amber-bg);color:var(--amber);">⚠ Short notice</span>':''}</div><span style="font-size:12px;color:var(--gray-400);">${daysSince===0?'Today':daysSince+'d ago'}</span></div>
+      <div style="padding:12px 14px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:10px;">
+          <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;">Dates</div><div style="font-weight:600;margin-top:2px;">${fmtShort(r.start_date)}${r.start_date!==r.end_date?' – '+fmtShort(r.end_date):''}</div></div>
+          <div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;">Hours</div><div style="font-weight:600;margin-top:2px;">${r.total_hours}h${r.partial_day?' (partial)':''}</div></div>
+          ${r.partial_day?`<div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;">Reason</div><div style="margin-top:2px;">${r.partial_detail||r.partial_reason||'—'}</div></div>`:''}
+          ${r.request_type!=='sick'?`<div><div style="font-size:11px;color:var(--gray-400);font-weight:700;text-transform:uppercase;">Notice</div><div style="font-weight:600;margin-top:2px;color:${r.requires_approval?'var(--amber)':'inherit'}">${r.notice_days!==null?r.notice_days+'d':'—'}</div></div>`:''}
+        </div>
+        ${r.notes?`<div style="background:var(--gray-50);border-radius:6px;padding:7px 10px;font-size:13px;margin-bottom:10px;">📝 ${r.notes}</div>`:''}
+        ${r.requires_approval?`<div class="alert warn" style="margin-bottom:10px;font-size:12px;">⚠️ Short notice — only ${r.notice_days}d given (policy: ${RMS_CONFIG.vacation_notice_days}d). Approve or deny at your discretion.</div>`:''}
+        ${overlapHtml}
+        <div style="display:flex;gap:6px;margin-top:10px;"><button class="btn-approve" onclick="openApprove('${r.id}')">✓ Approve</button><button class="btn-deny" onclick="openDeny('${r.id}','${r.employee_name}')">✗ Deny</button></div>
+      </div></div>`;
+  }).join('');
+}
+
+function openApprove(id){pendingActionId=id;const r=allRequests.find(r=>r.id===id);if(!r)return;document.getElementById('approve-detail').textContent=`${r.employee_name} — ${r.request_type} · ${fmtShort(r.start_date)} to ${fmtShort(r.end_date)} · ${r.total_hours}h`;document.getElementById('approve-bank').value='';document.getElementById('approve-split-row').style.display='none';document.getElementById('approve-by').value='';document.getElementById('approve-err').style.display='none';document.getElementById('modal-approve').style.display='flex';}
+function toggleApproveSplit(){document.getElementById('approve-split-row').style.display=document.getElementById('approve-bank').value==='mixed'?'grid':'none';}
+function openDeny(id,name){pendingActionId=id;document.getElementById('deny-detail').textContent=`Deny request from ${name}?`;document.getElementById('deny-by').value='';document.getElementById('deny-reason').value='';document.getElementById('modal-deny').style.display='flex';}
+
+async function confirmApprove(){
+  const by=document.getElementById('approve-by').value.trim();
+  const errEl=document.getElementById('approve-err');
+  if(!by){errEl.textContent='Please enter your name.';errEl.style.display='block';return;}
+  const r=allRequests.find(r=>r.id===pendingActionId);if(!r)return;
+  const ov=document.getElementById('approve-bank').value;
+  let sH=parseFloat(r.sick_hours)||0,vH=parseFloat(r.vacation_hours)||0,uH=parseFloat(r.unpaid_excused_hours)||0;
+  if(ov==='sick'){sH=r.total_hours;vH=0;uH=0;}
+  else if(ov==='vacation'){vH=r.total_hours;sH=0;uH=0;}
+  else if(ov==='unpaid_excused'){uH=r.total_hours;sH=0;vH=0;}
+  else if(ov==='mixed'){sH=parseFloat(document.getElementById('approve-sick-h').value)||0;vH=parseFloat(document.getElementById('approve-vac-h').value)||0;uH=0;}
+  await db.from('pto_requests').update({status:'approved',approved_by:by,approved_at:new Date().toISOString(),sick_hours:sH,vacation_hours:vH,unpaid_excused_hours:uH,manager_override_bank:ov||null,original_request_type:ov?r.request_type:null}).eq('id',pendingActionId);
+  const emp=allEmployees.find(e=>e.id===r.employee_id);
+  if(emp){const u={};if(sH>0)u.sick_used=(emp.sick_used||0)+sH;if(vH>0)u.vacation_used=(emp.vacation_used||0)+vH;if(Object.keys(u).length)await db.from('employees').update(u).eq('id',emp.id);}
+  closeModal('modal-approve');await loadAll();renderPending();renderHistory();renderBalances();
+  showToast('Request approved');
+}
+
+async function confirmDeny(){
+  const by=document.getElementById('deny-by').value.trim();if(!by){alert('Please enter your name.');return;}
+  await db.from('pto_requests').update({status:'denied',approved_by:by,approved_at:new Date().toISOString(),denial_reason:document.getElementById('deny-reason').value}).eq('id',pendingActionId);
+  closeModal('modal-deny');await loadAll();renderPending();renderHistory();
+  showToast('Request denied','error');
+}
+
+// ── MGR LOG TIME OFF ──────────────────────
+function openManagerLogModal(prefillId){
+  editingHistoryId=null;
+  mgrTotalHours=0;
+  mgrBorrowConfirmed=false;
+  document.getElementById('mgr-log-delete-row').style.display='none';
+  document.getElementById('mgr-log-title').textContent='📝 Log time off for employee';
+  document.getElementById('mgr-log-save-btn').textContent='Save';
+  buildMgrEmpOptions();
+  document.getElementById('mgr-emp-search').value='';
+  document.getElementById('mgr-emp-search').disabled=false;
+  document.getElementById('mgr-log-emp').value='';
+  filterMgrEmpDropdown('');
+  ['mgr-log-start','mgr-log-end'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('mgr-log-end').disabled=false;
+  document.getElementById('mgr-split-sick').value='0';
+  document.getElementById('mgr-split-vac').value='0';
+  document.getElementById('mgr-split-unpaid').value='0';
+  document.getElementById('mgr-split-paid').value='0';
+  document.getElementById('mgr-log-by').value='';
+  document.getElementById('mgr-log-notes').value='';
+  document.getElementById('mgr-partial').checked=false;
+  document.getElementById('mgr-partial-fields').style.display='none';
+  document.getElementById('mgr-partial-hrs').value='';
+  document.getElementById('mgr-partial-detail').value='';
+  document.getElementById('mgr-partial-reason').value='late_arrival';
+  document.getElementById('mgr-hours-summary').style.display='none';
+  document.getElementById('mgr-bank-section').style.display='none';
+  document.getElementById('mgr-coverage-warn').style.display='none';
+  document.getElementById('mgr-hours-override-row').style.display='none';
+  document.getElementById('mgr-hours-override').checked=false;
+  document.getElementById('mgr-override-field').style.display='none';
+  document.getElementById('mgr-override-hrs').value='';
+  document.getElementById('mgr-single-mode').style.display='block';
+  document.getElementById('mgr-split-mode').style.display='none';
+  document.querySelectorAll('.mgr-choice-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('mgr-log-err').style.display='none';
+  if(prefillId){const emp=allEmployees.find(e=>e.id===prefillId);if(emp)selectMgrEmp(emp.id,emp.name);}
+  mgrLogDirty=false;
+  document.getElementById('modal-mgr-log').style.display='flex';
+}
+let mgrTotalHours = 0;
+let mgrBorrowConfirmed = false;
+
+function isValidISODate(s){
+  // Must be exactly YYYY-MM-DD with a plausible 4-digit year
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) && parseInt(s.slice(0,4))>=2020 && parseInt(s.slice(0,4))<=2100;
+}
+
+// Fires ONLY when the START date field changes.
+// Its only job: if end date is currently empty, pre-fill it with start's date
+// as a convenience starting point. Never touches end date if it already has a value.
+function onMgrStartDateChange(){
+  const start=document.getElementById('mgr-log-start');
+  const end=document.getElementById('mgr-log-end');
+  const isPartial=document.getElementById('mgr-partial').checked;
+
+  if(isPartial){
+    // Partial days are always single-day — force end to match start
+    if(isValidISODate(start.value))end.value=start.value;
+  } else if(!end.value&&isValidISODate(start.value)){
+    // Only pre-fill end if it's genuinely empty — never overwrite a value the user set
+    end.value=start.value;
+  }
+  refreshMgrHoursSummary();
+}
+
+// Fires ONLY when the END date field changes. Never writes to end date itself.
+function onMgrEndDateChange(){
+  refreshMgrHoursSummary();
+}
+
+// Fires when the partial-day checkbox is toggled
+function onMgrPartialToggle(){
+  const start=document.getElementById('mgr-log-start');
+  const end=document.getElementById('mgr-log-end');
+  const isPartial=document.getElementById('mgr-partial').checked;
+
+  document.getElementById('mgr-partial-fields').style.display=isPartial?'block':'none';
+  end.disabled=isPartial;
+
+  if(isPartial){
+    if(isValidISODate(start.value))end.value=start.value;
+  } else {
+    document.getElementById('mgr-partial-hrs').value='';
+    document.getElementById('mgr-partial-detail').value='';
+    document.getElementById('mgr-partial-reason').value='late_arrival';
+  }
+  refreshMgrHoursSummary();
+}
+
+// Shared: recalculates and displays the hours summary + bank section.
+// Reads current field values but never writes back to the date fields.
+function refreshMgrHoursSummary(){
+  const start=document.getElementById('mgr-log-start');
+  const end=document.getElementById('mgr-log-end');
+  const isPartial=document.getElementById('mgr-partial').checked;
+
+  const summaryEl=document.getElementById('mgr-hours-summary');
+  const bankSection=document.getElementById('mgr-bank-section');
+  const coverageWarn=document.getElementById('mgr-coverage-warn');
+  coverageWarn.style.display='none';
+
+  if(!start.valueAsDate||!end.value){summaryEl.style.display='none';bankSection.style.display='none';return;}
+
+  const prevTotal=mgrTotalHours;
+
+  if(isPartial){
+    const ph=parseFloat(document.getElementById('mgr-partial-hrs').value)||0;
+    if(!ph){summaryEl.style.display='none';bankSection.style.display='none';return;}
+    mgrTotalHours=ph;
+    document.getElementById('mgr-hours-text').textContent=`${ph}h — partial day`;
+    document.getElementById('mgr-hours-sub').textContent=`${new Date(start.value+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}`;
+  } else {
+    const days=countWorkdays(start.value,end.value);
+    if(!days){summaryEl.style.display='none';bankSection.style.display='none';return;}
+    mgrTotalHours=days*8;
+    const dateRange=start.value===end.value
+      ?new Date(start.value+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})
+      :`${new Date(start.value+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric'})} – ${new Date(end.value+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}`;
+    document.getElementById('mgr-hours-text').textContent=`${days} workday${days!==1?'s':''} · ${mgrTotalHours}h total`;
+    document.getElementById('mgr-hours-sub').textContent=dateRange;
+    // Only show override for multi-day ranges — partial day already handles custom hours
+    document.getElementById('mgr-hours-override-row').style.display=days>1?'block':'none';
+  }
+
+  // If the target total changed, the old bank allocation no longer applies —
+  // clear it so the user always re-picks against the current, correct total.
+  if(mgrTotalHours!==prevTotal)resetMgrBankSelection();
+
+  summaryEl.style.display='block';
+  bankSection.style.display='block';
+  updateMgrSplitTotal();
+}
+
+// ── SINGLE-CHOICE MODE (default) ──────────
+function pickMgrSingleBank(bank){
+  // Fills the underlying 4 fields (so save logic is unchanged) and shows clear selected state
+  document.getElementById('mgr-split-sick').value=bank==='sick'?mgrTotalHours:0;
+  document.getElementById('mgr-split-vac').value=bank==='vacation'?mgrTotalHours:0;
+  document.getElementById('mgr-split-unpaid').value=bank==='unpaid_excused'?mgrTotalHours:0;
+  document.getElementById('mgr-split-paid').value=bank==='paid_excused'?mgrTotalHours:0;
+  document.querySelectorAll('.mgr-choice-card').forEach(c=>c.classList.toggle('selected',c.dataset.bank===bank));
+  updateMgrSplitTotal();
+  mgrLogDirty=true;
+}
+
+// ── MODE SWITCHING ─────────────────────────
+function switchToMgrSplitMode(){
+  document.getElementById('mgr-single-mode').style.display='none';
+  document.getElementById('mgr-split-mode').style.display='block';
+  // Carry over whatever single-bank selection was made, if any, as a starting point
+  updateMgrSplitTotal();
+}
+function switchToMgrSingleMode(){
+  document.getElementById('mgr-split-mode').style.display='none';
+  document.getElementById('mgr-single-mode').style.display='block';
+  // Clear the split fields and any selection so the user picks fresh
+  document.getElementById('mgr-split-sick').value=0;
+  document.getElementById('mgr-split-vac').value=0;
+  document.getElementById('mgr-split-unpaid').value=0;
+  document.getElementById('mgr-split-paid').value=0;
+  document.querySelectorAll('.mgr-choice-card').forEach(c=>c.classList.remove('selected'));
+  updateMgrSplitTotal();
+}
+
+function updateMgrSplitTotal(){
+  const sick=parseFloat(document.getElementById('mgr-split-sick').value)||0;
+  const vac=parseFloat(document.getElementById('mgr-split-vac').value)||0;
+  const unpaid=parseFloat(document.getElementById('mgr-split-unpaid').value)||0;
+  const paid=parseFloat(document.getElementById('mgr-split-paid').value)||0;
+  const total=sick+vac+unpaid+paid;
+  const diff=total-mgrTotalHours;
+  const el=document.getElementById('mgr-split-total');
+  const warn=document.getElementById('mgr-coverage-warn');
+  if(Math.abs(diff)<0.01&&total>0){
+    el.style.color='var(--green)';el.textContent=`✓ Total: ${total}h — matches perfectly`;
+    warn.style.display='none';
+  } else if(diff>0.01){
+    el.style.color='var(--red)';el.textContent=`Total: ${total}h — ${diff.toFixed(1)}h over`;
+    warn.innerHTML=`⚠️ You've allocated ${diff.toFixed(1)}h more than needed (${mgrTotalHours}h total). Reduce one of the banks above.`;
+    warn.style.display='block';
+  } else if(total===0){
+    el.style.color='var(--gray-400)';el.textContent=`Enter hours above to cover ${mgrTotalHours}h`;
+    warn.style.display='none';
+  } else {
+    el.style.color='var(--amber)';el.textContent=`Total: ${total}h — ${Math.abs(diff).toFixed(1)}h short of ${mgrTotalHours}h needed`;
+    warn.innerHTML=`⚠️ You still need to allocate ${Math.abs(diff).toFixed(1)}h more to fully cover this absence.`;
+    warn.style.display='block';
+  }
+}
+
+// syncMgrEnd removed — replaced by onMgrStartDateChange / onMgrEndDateChange / onMgrPartialToggle
+
+async function confirmMgrLog(){
+  const empId=document.getElementById('mgr-log-emp').value;
+  const start=document.getElementById('mgr-log-start').value;
+  const end=document.getElementById('mgr-log-end').value;
+  const isP=document.getElementById('mgr-partial').checked;
+  const pH=parseFloat(document.getElementById('mgr-partial-hrs').value)||0;
+  const by=document.getElementById('mgr-log-by').value.trim();
+  const notes=document.getElementById('mgr-log-notes').value.trim();
+  const errEl=document.getElementById('mgr-log-err');
+  errEl.style.display='none';
+
+  if(!empId){errEl.textContent='Please select an employee.';errEl.style.display='block';return;}
+  if(!start||!end){errEl.textContent='Please enter dates.';errEl.style.display='block';return;}
+  if(!isValidISODate(start)||!isValidISODate(end)){errEl.textContent='One of the dates looks invalid (check the year is 4 digits, e.g. 2026). Please re-enter both dates.';errEl.style.display='block';return;}
+  if(end<start){errEl.textContent='End date cannot be before start date.';errEl.style.display='block';return;}
+  if(!by){errEl.textContent='Please enter your name.';errEl.style.display='block';return;}
+  if(isP&&(!pH||pH<=0)){errEl.textContent='Please enter the number of hours for this partial day.';errEl.style.display='block';return;}
+
+  // Check for an existing pending or approved request for this employee overlapping these dates
+  // (skip this check when editing an existing entry — it would overlap with itself)
+  if(!editingHistoryId){
+    const overlap=allRequests.find(r=>
+      r.employee_id===empId&&
+      (r.status==='pending'||r.status==='approved')&&
+      r.start_date<=end&&r.end_date>=start
+    );
+    if(overlap){
+      const overlapEmp=allEmployees.find(e=>e.id===empId);
+      const proceed=confirm(`${overlapEmp?.name||empId} already has a ${overlap.status} request covering ${overlap.start_date===overlap.end_date?overlap.start_date:overlap.start_date+' to '+overlap.end_date} (${overlap.total_hours}h, ${overlap.request_type}).\n\nThis looks like it may be a duplicate. Continue anyway?`);
+      if(!proceed)return;
+    }
+  }
+
+  // Use mgrTotalHours as the source of truth — it already reflects any manual
+  // hours override the user set (e.g. "not a full day for each date").
+  // Recalculating from countWorkdays here would silently discard that override.
+  const totalH=mgrTotalHours;
+  const emp=allEmployees.find(e=>e.id===empId);
+
+  // Derive hours from the unified 4-bank allocator
+  let sH=parseFloat(document.getElementById('mgr-split-sick').value)||0;
+  let vH=parseFloat(document.getElementById('mgr-split-vac').value)||0;
+  let uH=parseFloat(document.getElementById('mgr-split-unpaid').value)||0;
+  let pdH=parseFloat(document.getElementById('mgr-split-paid').value)||0;
+
+  const allocTotal=sH+vH+uH+pdH;
+  if(allocTotal<=0){errEl.textContent='Please allocate hours to at least one bank above.';errEl.style.display='block';return;}
+  if(Math.abs(allocTotal-totalH)>0.01){
+    errEl.textContent=`Allocated hours (${allocTotal}h) must add up to ${totalH}h total.`;errEl.style.display='block';return;
+  }
+
+  // Determine a readable request_type: single bank name if only one is used, else 'mixed'
+  const banksUsed=[sH>0&&'sick',vH>0&&'vacation',uH>0&&'unpaid_excused',pdH>0&&'paid_excused'].filter(Boolean);
+  const rt=banksUsed.length===1?banksUsed[0]:'mixed';
+
+  // ── SICK: never allowed to go negative ──
+  if(emp&&sH>0){
+    const sickRemaining=(emp.sick_bank_start||0)-(emp.sick_used||0);
+    const alreadyAllocated=editingHistoryId?(parseFloat(allRequests.find(r=>r.id===editingHistoryId)?.sick_hours)||0):0;
+    const netSickNeeded=sH-alreadyAllocated;
+    if(netSickNeeded>sickRemaining){
+      errEl.textContent=`${emp.name} only has ${sickRemaining.toFixed(1)}h sick time remaining — cannot allocate ${sH}h. Sick time cannot go negative. Use vacation or unpaid excused instead.`;
+      errEl.style.display='block';return;
+    }
+  }
+
+  // ── VACATION: can go negative, but requires explicit manager confirmation (borrowing against next year) ──
+  if(emp&&vH>0){
+    const vacRemaining=(emp.vacation_bank_start||0)-(emp.vacation_used||0);
+    const alreadyAllocated=editingHistoryId?(parseFloat(allRequests.find(r=>r.id===editingHistoryId)?.vacation_hours)||0):0;
+    const netVacNeeded=vH-alreadyAllocated;
+    const resultingBalance=vacRemaining-netVacNeeded;
+    if(resultingBalance<0&&!mgrBorrowConfirmed){
+      const confirmMsg=`${emp.name} only has ${vacRemaining.toFixed(1)}h vacation remaining. Allocating ${vH}h will take their balance to ${resultingBalance.toFixed(1)}h — a borrow against next year's accrual.\n\nThis will be automatically deducted when the vacation bank resets in January. Continue?`;
+      if(!confirm(confirmMsg)){return;}
+      mgrBorrowConfirmed=true;
+    }
+  }
+
+  if(editingHistoryId){
+    const orig=allRequests.find(r=>r.id===editingHistoryId);
+    const sickDiff=sH-(parseFloat(orig?.sick_hours)||0);
+    const vacDiff=vH-(parseFloat(orig?.vacation_hours)||0);
+    const{error}=await db.from('pto_requests').update({
+      start_date:start,end_date:end,request_type:rt,
+      total_days:isP?totalH/8:countWorkdays(start,end),total_hours:totalH,
+      sick_hours:sH,vacation_hours:vH,unpaid_excused_hours:uH,paid_excused_hours:pdH,
+      notes:`[Manager entry] ${notes}`,approved_by:by,
+    }).eq('id',editingHistoryId);
+    if(error){errEl.textContent='Error: '+error.message;errEl.style.display='block';return;}
+    if(emp&&(sickDiff!==0||vacDiff!==0)){
+      const u={};
+      if(sickDiff!==0)u.sick_used=Math.max(0,(emp.sick_used||0)+sickDiff);
+      if(vacDiff!==0)u.vacation_used=Math.max(0,(emp.vacation_used||0)+vacDiff);
+      await db.from('employees').update(u).eq('id',empId);
+    }
+    mgrLogDirty=false;closeModal('modal-mgr-log');
+    await loadAll();renderHistory();renderBalances();
+    showToast('Entry updated successfully');
+    return;
+  }
+
+  const{error}=await db.from('pto_requests').insert({
+    employee_id:empId,employee_name:emp?.name||empId,request_type:rt,
+    start_date:start,end_date:end,
+    total_days:isP?totalH/8:countWorkdays(start,end),total_hours:totalH,
+    sick_hours:sH,vacation_hours:vH,unpaid_excused_hours:uH,paid_excused_hours:pdH,
+    partial_day:isP,
+    partial_reason:isP?document.getElementById('mgr-partial-reason').value:null,
+    partial_detail:isP?document.getElementById('mgr-partial-detail').value:null,
+    status:'approved',approved_by:by,approved_at:new Date().toISOString(),
+    notes:`[Manager entry]${notes?' '+notes:''}`,notice_days:0,requires_approval:false
+  });
+  if(error){errEl.textContent='Error: '+error.message;errEl.style.display='block';return;}
+  if(emp){
+    const u={};
+    if(sH>0)u.sick_used=(emp.sick_used||0)+sH;
+    if(vH>0)u.vacation_used=(emp.vacation_used||0)+vH;
+    if(Object.keys(u).length)await db.from('employees').update(u).eq('id',empId);
+  }
+  mgrLogDirty=false;closeModal('modal-mgr-log');
+  await loadAll();renderPending();renderHistory();renderBalances();
+  showToast(`Time off logged for ${emp?.name||empId}`);
+}
+// ── PAYROLL ───────────────────────────────
+function goPPStep(n){
+  currentPPStep=n;
+  for(let i=1;i<=4;i++){
+    document.getElementById('pp-step-'+i).style.display=i===n?'block':'none';
+    const p=document.getElementById('pp-pill-'+i);p.classList.remove('active','done');
+    if(i<n)p.classList.add('done');else if(i===n)p.classList.add('active');
+  }
+  if(n===3)renderPunchLog();
+  if(n===4)renderExportSummary();
+}
+
+function loadTimeclockCSV(input){
+  const f=input.files[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const raw=e.target.result.replace(/^\uFEFF/,'');
+    const lines=raw.trim().split(/\r?\n/);
+    const hdrs=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,''));
+    const get=(row,name)=>{const i=hdrs.findIndex(h=>h.toLowerCase()===name.toLowerCase());return i>=0?(row[i]||'').trim().replace(/^"|"$/g,''):'';}
+    tcRows=[];
+    for(let i=1;i<lines.length;i++){
+      const cols=csvSplit(lines[i]);
+      if(!cols.length||!get(cols,'Person ID'))continue;
+      tcRows.push({personId:get(cols,'Person ID'),personName:get(cols,'Person Name'),firstName:get(cols,'First Name'),lastName:get(cols,'Last Name'),date:get(cols,'Date'),timesheet:get(cols,'Timesheet'),clockIn1:get(cols,'Clock In1'),clockOut1:get(cols,'Clock Out1'),clockIn2:get(cols,'Clock In2'),clockOut2:get(cols,'Clock Out2'),clockIn3:get(cols,'Clock In3'),clockOut3:get(cols,'Clock Out3'),clockIn4:get(cols,'Clock In4'),clockOut4:get(cols,'Clock Out4'),totalWork:get(cols,'Total Work Time(h)'),totalOT:get(cols,'Total Overtime Time(h)'),totalBreak:get(cols,'Total Break Time(h)'),abnormal:get(cols,'Abnormal Situation')});
+    }
+    document.getElementById('tc-upload-zone').classList.add('loaded');
+    document.getElementById('tc-fname').textContent=`✓ ${f.name} (${tcRows.length} rows)`;
+    document.getElementById('btn-pp-next').disabled=false;
+  };
+  reader.readAsText(f);
+}
+function csvSplit(line){const r=[];let c='',q=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){q=!q;}else if(ch===','&&!q){r.push(c);c='';}else c+=ch;}r.push(c);return r;}
+
+function mmddyyyy_to_iso(s){const p=s.split('/');return p.length===3?`${p[2]}-${p[0].padStart(2,'0')}-${p[1].padStart(2,'0')}`:''}
+
+function runPayrollStep2(){
+  const ppS=document.getElementById('pp-start').value;
+  const ppE=document.getElementById('pp-end').value;
+  if(!ppS||!ppE){alert('Please set pay period dates.');return;}
+  if(!tcRows.length){alert('Please upload a CSV first.');return;}
+  punchData={};punchAdj={};
+  tcRows.forEach(row=>{
+    const iso=mmddyyyy_to_iso(row.date);
+    if(!iso)return;
+    const key=row.personId+'|'+iso;
+    if(!punchData[key]){punchData[key]=Object.assign({},row,{iso});}
+  });
+  // Parse and save attendance records in background
+  const attRecs=parseAttendanceFromCSV(tcRows,ppS,ppE);
+  saveAttendanceFromPayroll(attRecs).catch(e=>console.warn('Attendance save:',e));
+  goPPStep(2);renderExceptions();
+}
+
+function renderExceptions(){
+  const ppS=document.getElementById('pp-start').value;
+  const ppE=document.getElementById('pp-end').value;
+  const approved=allRequests.filter(r=>r.status==='approved');
+  const exceptions=[];
+  Object.entries(punchData).forEach(([key,row])=>{
+    const{iso}=row;
+    if(iso<ppS||iso>ppE)return;
+    if(isWknd(iso)||isHol(iso))return;
+    const isSal=row.timesheet.toLowerCase().includes('salary');
+    if(isSal)return;
+    const totalMin=parseMin(row.totalWork);
+    const missingOut=row.clockIn1&&!row.clockOut1;
+    const noHours=!totalMin&&!row.clockIn1;
+    const hasPTO=approved.some(p=>p.employee_id===row.personId&&p.start_date<=iso&&p.end_date>=iso);
+    const abnormal=row.abnormal&&row.abnormal.trim();
+    if(missingOut||(!totalMin&&!hasPTO)||abnormal){
+      const issues=[];
+      if(missingOut)issues.push('Missing clock-out');
+      if(noHours&&!hasPTO)issues.push('No hours logged, no PTO on file');
+      if(abnormal)issues.push('Time clock flag: '+abnormal);
+      exceptions.push({key,row,iso,issues,totalMin,hasPTO});
+    }
+  });
+  const el=document.getElementById('exceptions-content');
+  if(!exceptions.length){el.innerHTML='<div class="alert success">✅ No exceptions found — all punches look clean for this pay period.</div>';return;}
+  el.innerHTML=`<div class="alert warn">⚠ <strong>${exceptions.length} exception${exceptions.length>1?'s':''} found.</strong> Review before proceeding. Fix in Step 3 if needed.</div>
+  <div class="card"><div class="overflow-x"><table>
+  <thead><tr><th>Employee</th><th>Date</th><th>Issue(s)</th><th>Total time</th><th>PTO covers?</th></tr></thead><tbody>
+  ${exceptions.map(ex=>`<tr class="exception-row"><td><div class="emp-name">${ex.row.personName}</div><div class="emp-id">${ex.row.personId}</div></td><td>${fmtShort(ex.iso)}</td><td style="color:var(--red);">${ex.issues.map(i=>`<div>⚠ ${i}</div>`).join('')}</td><td>${ex.totalMin?minToHM(ex.totalMin)+'h':'—'}</td><td>${ex.hasPTO?'<span class="badge approved">Yes</span>':'<span class="badge denied">No</span>'}</td></tr>`).join('')}
+  </tbody></table></div></div>`;
+}
+
+function filterPunchLog(q){document.querySelectorAll('#punch-log-content .card').forEach(c=>{c.style.display=(!q||c.textContent.toLowerCase().includes(q.toLowerCase()))?'':'none';});}
+
+function renderPunchLog(){
+  const ppS=document.getElementById('pp-start').value;
+  const ppE=document.getElementById('pp-end').value;
+  const approved=allRequests.filter(r=>r.status==='approved');
+  const groups={};
+  Object.entries(punchData).forEach(([key,row])=>{
+    const{iso}=row;if(iso<ppS||iso>ppE)return;
+    if(!groups[row.personId])groups[row.personId]={name:row.personName,id:row.personId,isSal:row.timesheet.toLowerCase().includes('salary'),days:[]};
+    groups[row.personId].days.push({key,row,iso});
+  });
+  let html='';
+  Object.values(groups).sort((a,b)=>a.name.localeCompare(b.name)).forEach(g=>{
+    g.days.sort((a,b)=>a.iso.localeCompare(b.iso));
+    let totalMin=0;
+    let rows='';
+    g.days.forEach(({key,row,iso})=>{
+      const wknd=isWknd(iso),hol=isHol(iso),isSal=g.isSal;
+      const rowMin=parseMin(row.totalWork);
+      const roundedMin=calcRoundedWorkedMin(row);
+      const displayMin=roundedMin>0?roundedMin:rowMin;
+      const showBoth=roundedMin>0&&Math.abs(roundedMin-rowMin)>0;
+      if(!isSal&&!wknd)totalMin+=rowMin;
+      const pto=approved.find(p=>p.employee_id===g.id&&p.start_date<=iso&&p.end_date>=iso);
+      const adjs=punchAdj[key]||[];
+      const missingOut=row.clockIn1&&!row.clockOut1&&!isSal;
+      rows+=`<tr style="${wknd||hol?'opacity:.45;':''}${missingOut?'background:#fff1f2;':''}">
+        <td><strong>${fmtShort(iso)}</strong>${hol?` <span class="badge hol" style="font-size:10px;">${HOL_NAMES[iso]||'HOL'}</span>`:''}</td>
+        <td>${row.clockIn1||'—'}</td>
+        <td style="${missingOut?'color:var(--red);font-weight:700;':''}">${row.clockOut1||(missingOut?'MISSING ⚠':'—')}</td>
+        <td>${row.clockIn2||'—'}</td><td>${row.clockOut2||'—'}</td>
+        <td class="right"><strong>${displayMin?minToHM(displayMin)+'h':'—'}</strong>${showBoth?`<span style="font-size:10px;color:var(--gray-400);display:block;">raw: ${minToHM(rowMin)}h</span>`:''}${adjs.length?'<span class="adj-note">ADJ</span>':''}</td>
+        <td>${pto?`<span class="badge ${pto.request_type}" style="font-size:10px;">${(pto.sick_hours||0)>0?`🤒${pto.sick_hours}h `:''}${(pto.vacation_hours||0)>0?`✈️${pto.vacation_hours}h`:''}</span>`:'—'}</td>
+        <td>${!wknd&&!hol?`<button class="btn-sm" onclick="openEditPunch('${key}','${g.name}','${iso}')">Edit</button>`:''}</td>
+      </tr>`;
+      adjs.forEach(a=>{rows+=`<tr><td colspan="8" style="padding:3px 10px 3px 24px;font-size:11px;background:#fff7ed;color:#c2410c;">↳ ${a.adjustment_type} by ${a.adjusted_by} — ${a.reason}</td></tr>`;});
+    });
+    html+=`<div class="card" style="margin-bottom:12px;">
+      <div class="card-title"><div><strong>${g.name}</strong> <span class="emp-id" style="margin-left:6px;">${g.id}</span>${g.isSal?' <span class="badge salaried">SALARIED</span>':''}</div>
+      <button class="btn-sm" onclick="openAddPunch('${g.id}','${g.name}')">+ Add day/punch</button></div>
+      <div class="overflow-x"><table>
+        <thead><tr><th>Date</th><th>In 1</th><th>Out 1</th><th>In 2</th><th>Out 2</th><th class="right">Total</th><th>PTO</th><th></th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      ${!g.isSal?`<div style="padding:8px 14px;border-top:1px solid var(--gray-100);font-size:13px;font-weight:600;color:var(--teal);">Period total: ${minToHM(totalMin)}h (${(totalMin/60).toFixed(2)}h decimal)</div>`:''}
+    </div>`;
+  });
+  document.getElementById('punch-log-content').innerHTML=html||'<div class="empty">No punch records for this pay period.</div>';
+}
+
+function openEditPunch(key,empName,iso){
+  editingPunchKey=key;
+  const row=punchData[key];
+  document.getElementById('ep-title').textContent=`Edit punch — ${empName}`;
+  document.getElementById('ep-sub').textContent=`${fmtShort(iso)} · Original: ${row.clockIn1||'—'} → ${row.clockOut1||'MISSING'}`;
+  document.getElementById('ep-in').value=row.clockIn1?row.clockIn1.slice(0,5):'';
+  document.getElementById('ep-out').value=row.clockOut1?row.clockOut1.slice(0,5):'';
+  document.getElementById('ep-by').value='';document.getElementById('ep-reason').value='';
+  document.getElementById('ep-err').style.display='none';
+  document.getElementById('modal-edit-punch').style.display='flex';
+}
+
+function confirmEditPunch(){
+  const by=document.getElementById('ep-by').value.trim();
+  const reason=document.getElementById('ep-reason').value.trim();
+  const errEl=document.getElementById('ep-err');
+  if(!by||!reason){errEl.textContent='Your name and a reason are both required.';errEl.style.display='block';return;}
+  const key=editingPunchKey;const row=punchData[key];
+  const newIn=document.getElementById('ep-in').value;
+  const newOut=document.getElementById('ep-out').value;
+  if(!punchAdj[key])punchAdj[key]=[];
+  punchAdj[key].push({adjustment_type:'edit_punch',original_value:`${row.clockIn1||'none'} → ${row.clockOut1||'none'}`,new_value:`${newIn||'none'} → ${newOut||'none'}`,adjusted_by:by,reason,created_at:new Date().toISOString()});
+  if(newIn)punchData[key].clockIn1=newIn+':00';
+  if(newOut)punchData[key].clockOut1=newOut+':00';
+  // Recalc total for pair 1 if both present
+  if(newIn&&newOut){const im=parseInt(newIn.split(':')[0])*60+parseInt(newIn.split(':')[1]);const om=parseInt(newOut.split(':')[0])*60+parseInt(newOut.split(':')[1]);const diff=om-im;if(diff>0){const p2=parseMin(punchData[key].clockTime2||'');punchData[key].totalWork=minToHM(diff+p2)+':00';}}
+  closeModal('modal-edit-punch');renderPunchLog();
+}
+
+function confirmDeletePunch(){
+  const by=document.getElementById('ep-by').value.trim();
+  const reason=document.getElementById('ep-reason').value.trim();
+  const errEl=document.getElementById('ep-err');
+  if(!by||!reason){errEl.textContent='Your name and a reason are both required.';errEl.style.display='block';return;}
+  const key=editingPunchKey;const row=punchData[key];
+  if(!punchAdj[key])punchAdj[key]=[];
+  punchAdj[key].push({adjustment_type:'delete_punch',original_value:`${row.clockIn1||'none'} → ${row.clockOut1||'none'}`,new_value:'DELETED',adjusted_by:by,reason,created_at:new Date().toISOString()});
+  punchData[key].clockIn1='';punchData[key].clockOut1='';
+  const p2=parseMin(punchData[key].clockTime2||'');
+  punchData[key].totalWork=p2?minToHM(p2)+':00':'';
+  closeModal('modal-edit-punch');renderPunchLog();
+}
+
+function openAddPunch(empId,empName){
+  addPunchEmpId=empId;
+  document.getElementById('ap-title').textContent=`Add punch — ${empName}`;
+  document.getElementById('ap-sub').textContent='Adding a punch for a day with no existing record.';
+  document.getElementById('ap-date').value='';
+  document.getElementById('ap-in').value='';document.getElementById('ap-out').value='';
+  document.getElementById('ap-by').value='';document.getElementById('ap-reason').value='';
+  document.getElementById('ap-err').style.display='none';
+  document.getElementById('modal-add-punch').style.display='flex';
+}
+
+function confirmAddPunch(){
+  const by=document.getElementById('ap-by').value.trim();
+  const reason=document.getElementById('ap-reason').value.trim();
+  const inT=document.getElementById('ap-in').value;
+  const outT=document.getElementById('ap-out').value;
+  const date=document.getElementById('ap-date').value;
+  const errEl=document.getElementById('ap-err');
+  if(!by||!reason||!inT||!date){errEl.textContent='Date, clock-in, your name, and reason are all required.';errEl.style.display='block';return;}
+  const key=addPunchEmpId+'|'+date;
+  const diffMin=outT?(parseInt(outT.split(':')[0])*60+parseInt(outT.split(':')[1]))-(parseInt(inT.split(':')[0])*60+parseInt(inT.split(':')[1])):0;
+  if(!punchData[key]){
+    const emp=allEmployees.find(e=>e.id===addPunchEmpId);
+    punchData[key]={personId:addPunchEmpId,personName:emp?.name||addPunchEmpId,date:date,iso:date,timesheet:'',clockIn1:inT+':00',clockOut1:outT?outT+':00':'',clockIn2:'',clockOut2:'',clockIn3:'',clockOut3:'',clockIn4:'',clockOut4:'',totalWork:diffMin>0?minToHM(diffMin)+':00':'',totalOT:'',totalBreak:'',abnormal:''};
+  } else {
+    punchData[key].clockIn1=inT+':00';
+    if(outT)punchData[key].clockOut1=outT+':00';
+    if(diffMin>0)punchData[key].totalWork=minToHM(diffMin)+':00';
+  }
+  if(!punchAdj[key])punchAdj[key]=[];
+  punchAdj[key].push({adjustment_type:'add_punch',original_value:'none',new_value:`${inT} → ${outT||'no out'}`,adjusted_by:by,reason,created_at:new Date().toISOString()});
+  closeModal('modal-add-punch');renderPunchLog();
+}
+
+function renderExportSummary(){
+  const rows=buildExportRows();
+  const hourly=rows.filter(r=>r.empType==='Hourly');
+  const totalReg=hourly.reduce((s,r)=>s+r.regH,0);
+  const totalOT=hourly.reduce((s,r)=>s+r.ot15H+r.ot2H,0);
+  const totalSick=rows.reduce((s,r)=>s+r.sickH,0);
+  const totalVac=rows.reduce((s,r)=>s+r.vacH,0);
+  const adjCount=Object.values(punchAdj).reduce((s,a)=>s+a.length,0);
+  const discrepancies=rows.filter(r=>r.hasDiscrepancy).length;
+  // Net difference from rounding (positive = employees got more hours)
+  const roundingDiff=hourly.reduce((s,r)=>s+(r.totalWorkedH-r.rawH),0);
+
+  document.getElementById('export-summary').innerHTML=`
+    <div class="kpi-row">
+      <div class="kpi info"><div class="kpi-val">${[...new Set(rows.map(r=>r.empId))].length}</div><div class="kpi-lbl">Employees</div></div>
+      <div class="kpi info"><div class="kpi-val">${totalReg.toFixed(2)}h</div><div class="kpi-lbl">Regular hours (rounded)</div></div>
+      <div class="kpi ${totalOT>0?'warn':'success'}"><div class="kpi-val">${totalOT.toFixed(2)}h</div><div class="kpi-lbl">Overtime hours (rounded)</div></div>
+      <div class="kpi info"><div class="kpi-val">${totalSick.toFixed(1)}h</div><div class="kpi-lbl">Sick PTO</div></div>
+      <div class="kpi info"><div class="kpi-val">${totalVac.toFixed(1)}h</div><div class="kpi-lbl">Vacation PTO</div></div>
+      <div class="kpi ${adjCount>0?'warn':'success'}"><div class="kpi-val">${adjCount}</div><div class="kpi-lbl">Manual adjustments</div></div>
+    </div>
+    <div class="alert info" style="font-size:13px;">
+      <strong>7/8 minute rounding applied</strong> to individual punch pairs. 
+      Net rounding effect this period: <strong>${roundingDiff>=0?'+':''}${roundingDiff.toFixed(2)}h</strong> across all hourly employees
+      ${discrepancies>0?`— <span style="color:var(--amber);font-weight:600;">${discrepancies} day${discrepancies!==1?'s':''} flagged</span> where rounded total differs from CSV total by more than 7 minutes (noted in export).`:'— no significant discrepancies.'}
+    </div>
+    <div class="alert success">Ready to export. The CPA file includes both rounded hours (for payroll) and raw CSV hours (for reference). Gross pay is NOT calculated — your CPA does that.</div>`;
+}
+
+// ── 7/8 MINUTE ROUNDING ──────────────────
+// Rounds a time (HH:MM:SS string) to the nearest quarter hour.
+// 1-7 min past quarter = round down, 8-14 min = round up.
+function roundPunchToQH(timeStr){
+  if(!timeStr||!timeStr.trim())return null;
+  const p=timeStr.trim().split(':').map(Number);
+  const totalMin=p[0]*60+(p[1]||0);
+  const remainder=totalMin%15;
+  const rounded=remainder<8?totalMin-remainder:totalMin+(15-remainder);
+  return rounded; // returns total minutes from midnight
+}
+
+// Calculate rounded total worked minutes from punch pairs
+function calcRoundedWorkedMin(row){
+  let totalRoundedMin=0;
+  const pairs=[
+    [row.clockIn1,row.clockOut1],
+    [row.clockIn2,row.clockOut2],
+    [row.clockIn3,row.clockOut3],
+    [row.clockIn4,row.clockOut4],
+  ];
+  pairs.forEach(([inT,outT])=>{
+    if(!inT||!outT)return;
+    const inR=roundPunchToQH(inT);
+    const outR=roundPunchToQH(outT);
+    if(inR!==null&&outR!==null&&outR>inR){
+      totalRoundedMin+=outR-inR;
+    }
+  });
+  return totalRoundedMin;
+}
+
+function buildExportRows(){
+  const ppS=document.getElementById('pp-start').value;
+  const ppE=document.getElementById('pp-end').value;
+  const approved=allRequests.filter(r=>r.status==='approved');
+  const rows=[];
+  const groups={};
+  Object.entries(punchData).forEach(([key,row])=>{
+    const{iso}=row;if(iso<ppS||iso>ppE)return;
+    if(!groups[row.personId])groups[row.personId]={name:row.personName,id:row.personId,isSal:row.timesheet.toLowerCase().includes('salary'),days:[]};
+    groups[row.personId].days.push({key,row,iso});
+  });
+  Object.values(groups).forEach(g=>{
+    const emp=allEmployees.find(e=>e.id===g.id);
+    const rate=emp?.hourly_rate||0;
+    g.days.sort((a,b)=>a.iso.localeCompare(b.iso)).forEach(({key,row,iso})=>{
+      if(isWknd(iso))return;
+      const hol=isHol(iso);
+
+      // ── ROUNDING LOGIC ──
+      // Step 1: calculate rounded total from individual punches (Option A)
+      const roundedMin=calcRoundedWorkedMin(row);
+      // Step 2: raw total from CSV for comparison
+      const rawMin=parseMin(row.totalWork);
+      // Step 3: if we got rounded punches, use them; otherwise fall back to raw
+      const workedMin=roundedMin>0?roundedMin:rawMin;
+      const workedH=workedMin/60;
+      // Step 4: flag if rounded differs from raw by more than 7 min (one rounding unit)
+      const discrepancyMin=Math.abs(roundedMin-rawMin);
+      const hasDiscrepancy=roundedMin>0&&discrepancyMin>7;
+
+      // California daily OT on rounded hours
+      const regH=g.isSal?0:Math.min(workedH,8);
+      const ot15H=g.isSal?0:Math.max(0,Math.min(workedH,12)-8);
+      const ot2H=g.isSal?0:Math.max(0,workedH-12);
+
+      const pto=approved.find(p=>p.employee_id===g.id&&p.start_date<=iso&&p.end_date>=iso);
+      const sickH=pto?parseFloat(pto.sick_hours)||0:0;
+      const vacH=pto?parseFloat(pto.vacation_hours)||0:0;
+      const unpaidH=pto?parseFloat(pto.unpaid_excused_hours)||0:0;
+      const paidExcH=pto?parseFloat(pto.paid_excused_hours)||0:0;
+      const holH=hol&&!g.isSal?8:0;
+      const adjs=punchAdj[key]||[];
+
+      // Build adjustment note — include rounding discrepancy flag if significant
+      let adjNote=adjs.length?`See audit log — ${adjs.map(a=>`${a.adjustment_type} by ${a.adjusted_by}`).join(', ')}`:'' ;
+      if(hasDiscrepancy){
+        const flag=`7/8 rounding: raw=${(rawMin/60).toFixed(2)}h → rounded=${(roundedMin/60).toFixed(2)}h (diff ${discrepancyMin}m)`;
+        adjNote=adjNote?adjNote+' | '+flag:flag;
+      }
+      if(roundedMin===0&&rawMin>0){
+        // No individual punches to round from — used raw total
+        adjNote=adjNote?adjNote+' | Used CSV total (no individual punch pairs available)':'Used CSV total (no individual punch pairs available)';
+      }
+
+      rows.push({
+        empId:g.id,empType:g.isSal?'Salaried':'Hourly',
+        firstName:emp?.name?.split(' ').slice(0,-1).join(' ')||g.name,
+        lastName:emp?.last_name||'',
+        date:iso,rate:g.isSal?'':rate,
+        regH,ot15H,ot2H,
+        totalWorkedH:workedH,
+        rawH:rawMin/60,      // for discrepancy column in export
+        hasDiscrepancy,
+        sickH,vacH,unpaidH,paidExcH,holH,adjNote
+      });
+    });
+  });
+  return rows;
+}
+
+function exportPayrollCSV(){
+  const rows=buildExportRows();
+  const ppS=document.getElementById('pp-start').value;
+  const ppE=document.getElementById('pp-end').value;
+  const hdr=[
+    'Employee ID','First Name','Last Name','Date','Employment Type','Hourly Rate',
+    'Regular Hours (rounded)','OT 1.5x Hours (rounded)','OT 2x Hours (rounded)',
+    'Total Hours (rounded)','Total Hours (raw CSV)',
+    'Sick PTO Hours','Vacation PTO Hours','Unpaid Excused Hours','Paid Excused Hours','Holiday Hours',
+    'Notes / Adjustments'
+  ];
+  const data=[hdr,...rows.map(r=>[
+    r.empId,r.firstName,r.lastName,r.date,r.empType,r.rate,
+    r.regH?r.regH.toFixed(2):'',
+    r.ot15H?r.ot15H.toFixed(2):'',
+    r.ot2H?r.ot2H.toFixed(2):'',
+    r.totalWorkedH?r.totalWorkedH.toFixed(2):'',
+    r.rawH?r.rawH.toFixed(2):'',
+    r.sickH||'',r.vacH||'',r.unpaidH||'',r.paidExcH||'',r.holH||'',
+    r.adjNote
+  ])];
+  dlXLSX(data,'Payroll',`RMS_Payroll_CPA_${ppS}_to_${ppE}.xlsx`);
+}
+
+function exportAuditLog(){
+  const ppS=document.getElementById('pp-start').value;const ppE=document.getElementById('pp-end').value;
+  const hdr=['Employee ID','Employee Name','Date','Adjustment Type','Original Value','New Value','Adjusted By','Reason','Timestamp'];
+  const rows=[hdr];
+  Object.entries(punchAdj).forEach(([key,adjs])=>{
+    adjs.forEach(a=>{const parts=key.split('|');const row=punchData[key];rows.push([parts[0],row?.personName||'',parts[1],a.adjustment_type,a.original_value,a.new_value,a.adjusted_by,a.reason,a.created_at]);});
+  });
+  if(rows.length===1){alert('No adjustments have been logged for this pay period.');return;}
+  dlXLSX(rows,'Audit Log',`RMS_Audit_Log_${ppS}.xlsx`);
+}
+// ── UNEXCUSED ABSENCE TRACKING (data lives in PTO Balances tab) ──
+function unexcusedYTD(empId){return allAbsences.filter(a=>a.employee_id===empId&&a.counts_toward_discipline&&new Date(a.absence_date).getFullYear()===new Date().getFullYear()).length;}
+
+// ── EMPLOYEE REVIEW SUMMARY ────────────────
+let rsEmpOptions=[];
+function buildRsEmpOptions(){
+  rsEmpOptions=allEmployees.map(e=>({id:e.id,name:e.name,terminated:e.terminated})).sort((a,b)=>a.name.localeCompare(b.name));
+}
+function openRsEmpDropdown(){
+  filterRsEmpDropdown(document.getElementById('rs-emp-search').value);
+  document.getElementById('rs-emp-dropdown').classList.add('open');
+}
+function filterRsEmpDropdown(q){
+  const dd=document.getElementById('rs-emp-dropdown');
+  const filtered=q?rsEmpOptions.filter(o=>o.name.toLowerCase().includes(q.toLowerCase())):rsEmpOptions;
+  if(!filtered.length){dd.innerHTML='<div class="search-select-option no-results">No employees found</div>';dd.classList.add('open');return;}
+  dd.innerHTML=filtered.map(o=>`<div class="search-select-option" onmousedown="selectRsEmp('${o.id}','${o.name.replace(/'/g,"\\'")}')">${o.name}${o.terminated?' <span style="font-size:10px;color:var(--red);">(terminated)</span>':''} <span style="font-size:11px;color:var(--gray-400);">${o.id}</span></div>`).join('');
+  dd.classList.add('open');
+}
+function selectRsEmp(id,name){
+  document.getElementById('rs-emp').value=id;
+  document.getElementById('rs-emp-search').value=name;
+  document.getElementById('rs-emp-dropdown').classList.remove('open');
+}
+document.addEventListener('click',e=>{
+  if(!document.getElementById('rs-emp-wrap')?.contains(e.target)){
+    document.getElementById('rs-emp-dropdown')?.classList.remove('open');
+  }
+});
+
+function setRsRange(range){
+  const today=new Date();
+  let start;
+  if(range==='30')start=new Date(today.getTime()-30*86400000);
+  else if(range==='90')start=new Date(today.getTime()-90*86400000);
+  else if(range==='ytd')start=new Date(today.getFullYear(),0,1);
+  else if(range==='year')start=new Date(today.getTime()-365*86400000);
+  document.getElementById('rs-start').value=fmt8601(start);
+  document.getElementById('rs-end').value=fmt8601(today);
+}
+
+function openReviewSummary(){
+  buildRsEmpOptions();
+  document.getElementById('rs-emp-search').value='';
+  document.getElementById('rs-emp').value='';
+  filterRsEmpDropdown('');
+  setRsRange('90');
+  document.getElementById('rs-results').style.display='none';
+  document.getElementById('rs-export-btn').style.display='none';
+  document.getElementById('modal-review-summary').style.display='flex';
+}
+
+let rsLastSummary=null;
+
+function generateReviewSummary(){
+  const empId=document.getElementById('rs-emp').value;
+  const start=document.getElementById('rs-start').value;
+  const end=document.getElementById('rs-end').value;
+  if(!empId){alert('Please select an employee.');return;}
+  if(!start||!end){alert('Please select a date range.');return;}
+
+  const emp=allEmployees.find(e=>e.id===empId);
+  const attRecs=allAttendance.filter(a=>a.employee_id===empId&&a.record_date>=start&&a.record_date<=end);
+  const absRecs=allAbsences.filter(a=>a.employee_id===empId&&a.counts_toward_discipline&&a.absence_date>=start&&a.absence_date<=end);
+
+  const lateRecs=attRecs.filter(r=>r.is_late);
+  const lunchRecs=attRecs.filter(r=>r.late_lunch);
+  const mealRecs=attRecs.filter(r=>r.lunch_too_short||r.lunch_too_long);
+  const otRecs=attRecs.filter(r=>(r.ot_1_5_minutes||0)+(r.ot_2x_minutes||0)>0);
+  const totalOTMin=attRecs.reduce((s,r)=>s+(r.ot_1_5_minutes||0)+(r.ot_2x_minutes||0),0);
+  const totalLateMin=lateRecs.reduce((s,r)=>s+(r.late_minutes||0),0);
+
+  rsLastSummary={emp,start,end,lateRecs,lunchRecs,mealRecs,otRecs,totalOTMin,totalLateMin,absRecs};
+
+  document.getElementById('rs-emp-name').textContent=emp?.name||empId;
+  document.getElementById('rs-date-range').textContent=`${fmtShort(start)} – ${fmtShort(end)}`;
+
+  document.getElementById('rs-late-count').textContent=lateRecs.length;
+  document.getElementById('rs-late-detail').textContent=lateRecs.length?`${totalLateMin} min total late`:'None recorded';
+
+  document.getElementById('rs-lunch-count').textContent=lunchRecs.length;
+  document.getElementById('rs-lunch-detail').textContent=lunchRecs.length?`${lunchRecs.reduce((s,r)=>s+(r.late_lunch_minutes||0),0)} min total late`:'None recorded';
+
+  document.getElementById('rs-meal-count').textContent=mealRecs.length;
+  document.getElementById('rs-meal-detail').textContent=mealRecs.length?`${mealRecs.filter(r=>r.lunch_too_short).length} short, ${mealRecs.filter(r=>r.lunch_too_long).length} long`:'None recorded';
+
+  document.getElementById('rs-ot-hours').textContent=(totalOTMin/60).toFixed(1)+'h';
+  document.getElementById('rs-ot-detail').textContent=otRecs.length?`across ${otRecs.length} day${otRecs.length!==1?'s':''}`:'None recorded';
+
+  document.getElementById('rs-abs-count').textContent=absRecs.length;
+  document.getElementById('rs-abs-detail').textContent=absRecs.length?`${unexcusedYTD(empId)}/6 this calendar year`:'None recorded';
+
+  // Detail list — only show if there's something to show
+  let detailHtml='';
+  if(lateRecs.length){
+    detailHtml+=`<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:4px;">Tardy dates</div>`;
+    detailHtml+=lateRecs.map(r=>`<span class="badge" style="background:var(--amber-bg);color:var(--amber);margin:2px;">${fmtShort(r.record_date)} · ${r.late_minutes}m</span>`).join('');
+    detailHtml+=`</div>`;
+  }
+  if(lunchRecs.length){
+    detailHtml+=`<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:4px;">Late lunch dates</div>`;
+    detailHtml+=lunchRecs.map(r=>`<span class="badge" style="background:var(--amber-bg);color:var(--amber);margin:2px;">${fmtShort(r.record_date)} · ${r.late_lunch_minutes}m</span>`).join('');
+    detailHtml+=`</div>`;
+  }
+  if(mealRecs.length){
+    detailHtml+=`<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:4px;">Meal duration violation dates</div>`;
+    detailHtml+=mealRecs.map(r=>`<span class="badge" style="background:var(--red-bg);color:var(--red);margin:2px;">${fmtShort(r.record_date)} · ${r.lunch_duration_minutes}m ${r.lunch_too_short?'(short)':'(long)'}</span>`).join('');
+    detailHtml+=`</div>`;
+  }
+  if(absRecs.length){
+    detailHtml+=`<div style="margin-bottom:10px;"><div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;margin-bottom:4px;">Unexcused absence dates</div>`;
+    detailHtml+=absRecs.map(r=>`<span class="badge" style="background:var(--red-bg);color:var(--red);margin:2px;">${fmtShort(r.absence_date)}</span>`).join('');
+    detailHtml+=`</div>`;
+  }
+  document.getElementById('rs-detail-list').innerHTML=detailHtml;
+
+  document.getElementById('rs-results').style.display='block';
+  document.getElementById('rs-export-btn').style.display='block';
+}
+
+function exportReviewSummary(){
+  if(!rsLastSummary)return;
+  const{emp,start,end,lateRecs,lunchRecs,mealRecs,otRecs,totalOTMin,totalLateMin,absRecs}=rsLastSummary;
+  const empId=document.getElementById('rs-emp').value;
+  const lines=[
+    `EMPLOYEE REVIEW SUMMARY`,
+    `${emp?.name||empId} (${empId})`,
+    `Period: ${fmtShort(start)} – ${fmtShort(end)}`,
+    ``,
+    `TARDIES: ${lateRecs.length}${lateRecs.length?` (${totalLateMin} min total)`:''}`,
+    ...lateRecs.map(r=>`  - ${r.record_date}: ${r.late_minutes} min late`),
+    ``,
+    `LATE LUNCHES: ${lunchRecs.length}`,
+    ...lunchRecs.map(r=>`  - ${r.record_date}: ${r.late_lunch_minutes} min late`),
+    ``,
+    `MEAL DURATION VIOLATIONS: ${mealRecs.length} (breaks under 30 min or over 60 min)`,
+    ...mealRecs.map(r=>`  - ${r.record_date}: ${r.lunch_duration_minutes} min (${r.lunch_too_short?'too short':'too long'})`),
+    ``,
+    `OVERTIME: ${(totalOTMin/60).toFixed(1)}h across ${otRecs.length} day(s)`,
+    ...otRecs.map(r=>`  - ${r.record_date}: ${(((r.ot_1_5_minutes||0)+(r.ot_2x_minutes||0))/60).toFixed(2)}h OT`),
+    ``,
+    `UNEXCUSED ABSENCES: ${absRecs.length} (${unexcusedYTD(empId)}/6 this calendar year)`,
+    ...absRecs.map(r=>`  - ${r.absence_date}${r.notes?': '+r.notes:''}`),
+    ``,
+    `Generated ${new Date().toLocaleString()}`,
+  ];
+  const blob=new Blob([lines.join('\n')],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`Review_${(emp?.name||empId).replace(/\s+/g,'_')}_${start}_to_${end}.txt`;
+  a.click();
+}
+
+function openLogAbsenceModal(){
+  buildAbsEmpOptions();
+  document.getElementById('abs-emp-search').value='';
+  document.getElementById('abs-emp').value='';
+  filterAbsEmpDropdown('');
+  document.getElementById('abs-date').value='';document.getElementById('abs-hours').value='8';
+  ['abs-cover-vac','abs-cover-sick'].forEach(id=>document.getElementById(id).value='0');
+  document.getElementById('abs-by').value='';document.getElementById('abs-notes').value='';
+  document.getElementById('abs-err').style.display='none';
+  document.getElementById('modal-log-absence').style.display='flex';
+}
+
+async function confirmLogAbsence(){
+  const empId=document.getElementById('abs-emp').value;
+  const date=document.getElementById('abs-date').value;
+  const hours=parseFloat(document.getElementById('abs-hours').value)||8;
+  const coverVac=parseFloat(document.getElementById('abs-cover-vac').value)||0;
+  const coverSick=parseFloat(document.getElementById('abs-cover-sick').value)||0;
+  const by=document.getElementById('abs-by').value.trim();
+  const notes=document.getElementById('abs-notes').value.trim();
+  const errEl=document.getElementById('abs-err');
+  if(!empId){errEl.textContent='Please select an employee.';errEl.style.display='block';return;}
+  if(!date||!by){errEl.textContent='Date and your name are required.';errEl.style.display='block';return;}
+  const ytdBefore=unexcusedYTD(empId);
+  const hoursUnpaid=Math.max(0,hours-coverVac-coverSick);
+  const{error}=await db.from('absence_records').insert({
+    employee_id:empId,absence_date:date,absence_type:'unexcused',
+    covered_by_vacation_hours:coverVac,covered_by_sick_hours:coverSick,
+    hours_unpaid:hoursUnpaid,
+    counts_toward_discipline:true,
+    unexcused_count_ytd:ytdBefore+1,
+    logged_by:by,notes
+  });
+  if(error){errEl.textContent='Error: '+error.message;errEl.style.display='block';return;}
+  const emp=allEmployees.find(e=>e.id===empId);
+  if(emp&&(coverVac>0||coverSick>0)){const u={};if(coverSick>0)u.sick_used=(emp.sick_used||0)+coverSick;if(coverVac>0)u.vacation_used=(emp.vacation_used||0)+coverVac;await db.from('employees').update(u).eq('id',empId);}
+  if(ytdBefore+1>=6)alert(`⚠️ ${emp?.name||empId} now has ${ytdBefore+1} unexcused absences this year. Policy: more than 6 is a termination trigger.`);
+  closeModal('modal-log-absence');await loadAll();renderBalances();
+  showToast(`Call-off logged for ${emp?.name||empId}`);
+}
+
+// exportAbsences removed — replaced by per-employee Review Summary export
+
+// ── PTO BALANCES ──────────────────────────
+function filterBalances(q){balSearch=q.toLowerCase();renderBalances();}
+function renderBalances(){
+  const emps=allEmployees.filter(e=>!e.terminated&&(!balSearch||e.name.toLowerCase().includes(balSearch)||e.id.toLowerCase().includes(balSearch)));
+  const hourly=emps.filter(e=>e.employment_type==='hourly');
+  const salaried=emps.filter(e=>e.employment_type==='salaried');
+  const totalSick=emps.reduce((s,e)=>s+(e.sick_bank_start-e.sick_used),0);
+  // Floor each employee at 0 before summing — a borrowed/negative balance means
+  // that person has zero available, not negative hours that offset everyone else's total.
+  const totalVac=emps.reduce((s,e)=>s+Math.max(0,e.vacation_bank_start-e.vacation_used),0);
+
+  // Payout liability — both remaining (owed now) and starting granted (max possible) values
+  // Payout liability — floor each employee's remaining balance at 0 before summing.
+  // A borrowed/negative vacation balance is a debt owed TO the company, not money
+  // the company gets to subtract from what it owes everyone else in December.
+  const totalPayH=hourly.reduce((s,e)=>s+Math.max(0,(e.sick_bank_start-e.sick_used)+(e.vacation_bank_start-e.vacation_used))*(e.hourly_rate||0),0);
+  const totalPayS=salaried.filter(e=>e.annual_salary).reduce((s,e)=>s+Math.max(0,(e.sick_bank_start-e.sick_used)+(e.vacation_bank_start-e.vacation_used))*(e.annual_salary/2080),0);
+  const totalPay=totalPayH+totalPayS;
+  const startingPayH=hourly.reduce((s,e)=>s+((e.sick_bank_start||0)+(e.vacation_bank_start||0))*(e.hourly_rate||0),0);
+  const startingPayS=salaried.filter(e=>e.annual_salary).reduce((s,e)=>s+((e.sick_bank_start||0)+(e.vacation_bank_start||0))*(e.annual_salary/2080),0);
+  const startingPay=startingPayH+startingPayS;
+  const salNoRate=salaried.filter(e=>!e.annual_salary).length;
+
+  // Unexcused absences — moved here from the old Absences tab
+  const ytdTotals={};emps.forEach(e=>{ytdTotals[e.id]=unexcusedYTD(e.id);});
+  const ytdAll=Object.values(ytdTotals).reduce((s,c)=>s+c,0);
+  const overLimit=Object.values(ytdTotals).filter(c=>c>6).length;
+
+  document.getElementById('balance-kpis').innerHTML=`
+    <div class="kpi info"><div class="kpi-val">${totalSick.toFixed(0)}h</div><div class="kpi-lbl">Sick remaining</div></div>
+    <div class="kpi info"><div class="kpi-val">${totalVac.toFixed(0)}h</div><div class="kpi-lbl">Vacation remaining</div></div>
+    <div class="kpi ${overLimit>0?'danger':ytdAll>0?'warn':'success'}"><div class="kpi-val">${ytdAll}</div><div class="kpi-lbl">Unexcused YTD (all)${overLimit>0?` · ${overLimit} over limit 🚨`:''}</div></div>
+    <div class="kpi info"><div class="kpi-val">${fmtMoney(totalPay)}</div><div class="kpi-lbl">Payout liability now${salNoRate>0?` <span style="color:var(--amber);">(${salNoRate} sal. missing salary)</span>`:''}<div style="margin-top:2px;color:var(--gray-400);font-weight:400;">of ${fmtMoney(startingPay)} granted max</div></div></div>`;
+
+  let html='';
+  emps.forEach(e=>{
+    const isSal=e.employment_type==='salaried';
+    const sR=e.sick_bank_start-e.sick_used,vR=e.vacation_bank_start-e.vacation_used;
+    const eq=isSal?(e.annual_salary?e.annual_salary/2080:null):e.hourly_rate;
+    const payout=eq?Math.max(0,(sR+vR))*eq:null;
+    const ytd=ytdTotals[e.id]||0;
+
+    // Sick bar: fill = remaining as % of given
+    const sickPct=e.sick_bank_start>0?Math.max(0,Math.min(100,sR/e.sick_bank_start*100)):0;
+    const sickFillClass=sR<8?'danger':sR<16?'warn':'sick';
+    const sickColor=sR<8?'var(--red)':sR<16?'var(--amber)':'inherit';
+
+    // Vacation bar: fill = remaining as % of given (clamped at 0 if borrowed negative)
+    const vacPct=e.vacation_bank_start>0?Math.max(0,Math.min(100,vR/e.vacation_bank_start*100)):0;
+    const vacFillClass=vR<0?'danger':vR<8?'danger':vR<16?'warn':'vac';
+    const vacColor=vR<0?'var(--red)':vR<8?'var(--red)':vR<16?'var(--amber)':'inherit';
+
+    html+=`<tr><td><div class="emp-name">${e.name}</div><div class="emp-id">${e.id}</div></td>
+      <td><span class="badge ${isSal?'salaried':''}">${isSal?'Salaried':'Hourly'}</span></td>
+      <td class="pto-cell">
+        <div class="pto-cell-top">
+          <span class="pto-cell-left" style="color:${sickColor};">${sR.toFixed(1)}h left</span>
+          <span class="pto-cell-sub">${e.sick_used.toFixed(1)}h used of ${e.sick_bank_start}h</span>
+        </div>
+        <div class="pto-track"><div class="pto-fill ${sickFillClass}" style="width:${sickPct}%;"></div></div>
+      </td>
+      <td class="pto-cell">
+        <div class="pto-cell-top">
+          <span class="pto-cell-left" style="color:${vacColor};">${vR.toFixed(1)}h left${vR<0?' <span style="font-size:9px;background:var(--red-bg);color:var(--red);padding:1px 4px;border-radius:3px;font-weight:700;">BORROWED</span>':''}</span>
+          <span class="pto-cell-sub">${e.vacation_used.toFixed(1)}h used of ${e.vacation_bank_start}h</span>
+        </div>
+        <div class="pto-track"><div class="pto-fill ${vacFillClass}" style="width:${vacPct}%;"></div></div>
+      </td>
+      <td class="right"><strong style="color:${ytd>=6?'var(--red)':ytd>=4?'var(--amber)':'inherit'}">${ytd}/6</strong></td>
+      <td class="right mono">${payout!==null?fmtMoney(payout):(isSal?'<span style="color:var(--gray-300);">add salary</span>':'—')}</td>
+      <td><button class="btn-sm" onclick="openEditBalances('${e.id}')">Edit</button></td>
+    </tr>`;
+  });
+  document.getElementById('balance-tbody').innerHTML=html;
+}
+function openEditBalances(id){const e=allEmployees.find(e=>e.id===id);if(!e)return;editingBalId=id;document.getElementById('bal-emp-name').textContent=e.name;document.getElementById('bal-sick').value=e.sick_used||0;document.getElementById('bal-vac').value=e.vacation_used||0;document.getElementById('modal-balances').style.display='flex';}
+
+// ── NEW YEAR RESET ────────────────────────
+// Entitlement by tenure — matches the policy used for automatic PTO bump reminders:
+// 0-3mo: 0/0 · 3mo-1yr: 40h sick/0 vac · 1yr-3yr: 40h sick/40h vac · 3yr+: 40h sick/80h vac (cap)
+function calcEntitledBanks(hireDateStr, asOfDate){
+  if(!hireDateStr)return{sick:0,vacation:0};
+  const hireDate=new Date(hireDateStr+'T12:00:00');
+  const tenureDays=(asOfDate-hireDate)/86400000;
+  const tenureMonths=tenureDays/30.44;
+  let sick=0,vacation=0;
+  if(tenureMonths>=3)sick=40;
+  if(tenureMonths>=36)vacation=80;
+  else if(tenureMonths>=12)vacation=40;
+  return{sick,vacation};
+}
+
+function openNewYearReset(){
+  const nextYear=new Date().getFullYear()+1;
+  document.getElementById('nyr-year').value=nextYear;
+  document.getElementById('nyr-by').value='';
+  document.getElementById('nyr-err').style.display='none';
+  renderNewYearResetTable();
+  document.getElementById('modal-new-year-reset').style.display='flex';
+}
+
+function renderNewYearResetTable(){
+  const resetYear=parseInt(document.getElementById('nyr-year').value)||new Date().getFullYear()+1;
+  const asOfDate=new Date(resetYear,0,1); // Jan 1 of reset year
+  const active=allEmployees.filter(e=>!e.terminated).sort((a,b)=>a.name.localeCompare(b.name));
+
+  let html='';
+  active.forEach(e=>{
+    const sickRem=(e.sick_bank_start||0)-(e.sick_used||0);
+    const vacRem=(e.vacation_bank_start||0)-(e.vacation_used||0);
+    const entitled=calcEntitledBanks(e.hire_date,asOfDate);
+    const carriesForward=vacRem<0?Math.abs(vacRem):0;
+
+    html+=`<tr data-emp-id="${e.id}">
+      <td><div class="emp-name" style="font-size:12px;">${e.name}</div><div class="emp-id">${e.id}</div></td>
+      <td class="right" style="font-size:12px;">${sickRem.toFixed(1)}h</td>
+      <td class="right" style="font-size:12px;color:${vacRem<0?'var(--red)':'inherit'};font-weight:${vacRem<0?'700':'400'};">${vacRem.toFixed(1)}h</td>
+      <td class="right" style="font-size:12px;">${entitled.sick}h</td>
+      <td class="right" style="font-size:12px;">${entitled.vacation}h</td>
+      <td class="right" style="font-size:12px;">${carriesForward>0?`<span style="color:var(--red);font-weight:700;">-${carriesForward.toFixed(1)}h</span>`:'<span style="color:var(--gray-400);">—</span>'}</td>
+    </tr>`;
+  });
+  document.getElementById('nyr-tbody').innerHTML=html||'<tr><td colspan="6" class="empty">No active employees.</td></tr>';
+}
+document.getElementById('nyr-year')?.addEventListener('input',renderNewYearResetTable);
+
+async function confirmNewYearReset(){
+  const errEl=document.getElementById('nyr-err');
+  const by=document.getElementById('nyr-by').value.trim();
+  const resetYear=parseInt(document.getElementById('nyr-year').value);
+  if(!by){errEl.textContent='Please enter your name to confirm this reset.';errEl.style.display='block';return;}
+  if(!resetYear||resetYear<2025||resetYear>2100){errEl.textContent='Please enter a valid reset year.';errEl.style.display='block';return;}
+
+  const confirmMsg=`This will reset PTO banks for ALL active employees to their ${resetYear} entitlement based on tenure. Any negative vacation balance will carry forward as debt in the new year. This cannot be undone from here — you would need to manually fix each employee afterward. Continue?`;
+  if(!confirm(confirmMsg))return;
+
+  const asOfDate=new Date(resetYear,0,1);
+  const active=allEmployees.filter(e=>!e.terminated);
+  let errors=0;
+
+  for(const e of active){
+    const vacRem=(e.vacation_bank_start||0)-(e.vacation_used||0);
+    const carriesForward=vacRem<0?Math.abs(vacRem):0;
+    const entitled=calcEntitledBanks(e.hire_date,asOfDate);
+
+    const{error}=await db.from('employees').update({
+      sick_bank_start:entitled.sick,
+      sick_used:0,
+      vacation_bank_start:entitled.vacation,
+      vacation_used:carriesForward, // debt carries forward as already-used hours
+    }).eq('id',e.id);
+    if(error)errors++;
+  }
+
+  closeModal('modal-new-year-reset');
+  await loadAll();
+  renderBalances();
+  if(errors>0){
+    showToast(`Reset completed with ${errors} error(s) — please review affected employees`,'error');
+  } else {
+    showToast(`PTO banks reset for ${active.length} employees for ${resetYear}`);
+  }
+}
+async function saveBalances(){await db.from('employees').update({sick_used:parseFloat(document.getElementById('bal-sick').value)||0,vacation_used:parseFloat(document.getElementById('bal-vac').value)||0}).eq('id',editingBalId);closeModal('modal-balances');await loadAll();renderBalances();}
+// ── REMINDERS ─────────────────────────────
+const REM_LABELS={'90_day_review':'90-Day Probation Review','pto_bump_3mo':'PTO: 5 sick days unlocked','1_year_review':'1-Year Performance Review','pto_bump_1yr':'PTO: 5 vacation days unlocked','pto_bump_3yr':'PTO: vacation → 10 days (cap)','annual_dec_review':'Annual Dec Raise Review'};
+const REM_ACTIONS={'90_day_review':'Schedule review · Offer health/dental/vision or $300/mo raise','pto_bump_3mo':'Update sick bank to 40h in the system','1_year_review':'Schedule review · Offer raise · Offer 401k enrollment','pto_bump_1yr':'Update vacation bank to 40h (5 days) in the system','pto_bump_3yr':'Update vacation bank to 80h (10 days, cap) in the system','annual_dec_review':'Schedule December raise reviews for all employees past 1 year'};
+
+async function checkAndSendReminders(){
+  const today=new Date();const todayStr=fmt8601(today);
+  for(const emp of allEmployees.filter(e=>!e.terminated&&e.hire_date)){
+    const hireDate=new Date(emp.hire_date+'T12:00:00');
+    const tenureDays=(today-hireDate)/86400000;
+    const milestones=[{type:'90_day_review',days:90},{type:'pto_bump_3mo',days:91},{type:'1_year_review',days:365},{type:'pto_bump_1yr',days:366},{type:'pto_bump_3yr',days:365*3}];
+    for(const m of milestones){
+      const due=new Date(hireDate.getTime()+m.days*86400000);
+      const dueStr=fmt8601(due);
+      if(!allReminders.find(r=>r.employee_id===emp.id&&r.reminder_type===m.type&&r.due_date===dueStr)){
+        await db.from('anniversary_reminders').upsert({employee_id:emp.id,reminder_type:m.type,due_date:dueStr,email_status:'pending'},{onConflict:'employee_id,reminder_type,due_date'}).then(()=>{});
+      }
+    }
+    // December annual review for 1yr+ employees
+    if(tenureDays>365){
+      const decDue=`${today.getFullYear()}-12-01`;
+      if(!allReminders.find(r=>r.employee_id===emp.id&&r.reminder_type==='annual_dec_review'&&r.due_date===decDue)){
+        await db.from('anniversary_reminders').upsert({employee_id:emp.id,reminder_type:'annual_dec_review',due_date:decDue,email_status:'pending'},{onConflict:'employee_id,reminder_type,due_date'}).then(()=>{});
+      }
+    }
+  }
+  // Send emails for pending past-due reminders
+  const{data:pending}=await db.from('anniversary_reminders').select('*').eq('email_status','pending').lte('due_date',todayStr);
+  for(const rem of(pending||[])){
+    await sendReminderEmail(rem);
+    await db.from('anniversary_reminders').update({email_status:'sent',sent_at:new Date().toISOString()}).eq('id',rem.id);
+  }
+  await loadReminders();renderReminders();
+}
+
+async function sendReminderEmail(rem){
+  if(!RMS_CONFIG.formspree_endpoint||RMS_CONFIG.formspree_endpoint.includes('YOUR_'))return;
+  const emp=allEmployees.find(e=>e.id===rem.employee_id);
+  try{await fetch(RMS_CONFIG.formspree_endpoint,{method:'POST',headers:{'Content-Type':'application/json','Accept':'application/json'},body:JSON.stringify({subject:`HR Reminder — ${REM_LABELS[rem.reminder_type]||rem.reminder_type} — ${emp?.name||rem.employee_id}`,employee:emp?.name||rem.employee_id,hire_date:emp?.hire_date||'—',reminder_type:REM_LABELS[rem.reminder_type]||rem.reminder_type,due_date:rem.due_date,action_needed:REM_ACTIONS[rem.reminder_type]||'Review required.'})});}catch(e){}
+}
+
+function setReminderFilter(f,btn){remFilter=f;document.querySelectorAll('#pane-reminders .filter-chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderReminders();}
+
+function renderReminders(){
+  const today=new Date();const soon14=new Date(today.getTime()+14*86400000);
+  const all=allReminders;
+  const overdue=all.filter(r=>r.email_status!=='dismissed'&&new Date(r.due_date+'T12:00:00')<=today).length;
+  const soon=all.filter(r=>r.email_status!=='dismissed'&&new Date(r.due_date+'T12:00:00')>today&&new Date(r.due_date+'T12:00:00')<=soon14).length;
+  const upcoming=all.filter(r=>r.email_status!=='dismissed'&&new Date(r.due_date+'T12:00:00')>soon14).length;
+  document.getElementById('reminder-kpis').innerHTML=`
+    <div class="kpi ${overdue>0?'danger':'success'}"><div class="kpi-val">${overdue}</div><div class="kpi-lbl">Overdue</div></div>
+    <div class="kpi ${soon>0?'warn':'success'}"><div class="kpi-val">${soon}</div><div class="kpi-lbl">Due within 14 days</div></div>
+    <div class="kpi info"><div class="kpi-val">${upcoming}</div><div class="kpi-lbl">Upcoming</div></div>`;
+  let rems=[...all];
+  if(remFilter==='overdue')rems=rems.filter(r=>r.email_status!=='dismissed'&&new Date(r.due_date+'T12:00:00')<=today);
+  else if(remFilter==='soon')rems=rems.filter(r=>r.email_status!=='dismissed'&&new Date(r.due_date+'T12:00:00')>today&&new Date(r.due_date+'T12:00:00')<=soon14);
+  else if(remFilter==='upcoming')rems=rems.filter(r=>r.email_status!=='dismissed'&&new Date(r.due_date+'T12:00:00')>soon14);
+  else if(remFilter==='dismissed')rems=rems.filter(r=>r.email_status==='dismissed');
+  else rems=rems.filter(r=>r.email_status!=='dismissed');
+  rems.sort((a,b)=>a.due_date.localeCompare(b.due_date));
+  if(!rems.length){document.getElementById('reminders-list').innerHTML='<div class="empty">No reminders in this view.</div>';return;}
+  document.getElementById('reminders-list').innerHTML=rems.map(r=>{
+    const emp=allEmployees.find(e=>e.id===r.employee_id);
+    const due=new Date(r.due_date+'T12:00:00');
+    const isOver=due<=today,isSoon=due>today&&due<=soon14;
+    const cls=isOver?'urgent':isSoon?'soon':'upcoming';
+    const daysStr=isOver?`${Math.round((today-due)/86400000)}d overdue`:isSoon?`Due in ${Math.round((due-today)/86400000)}d`:`Due ${fmtShort(r.due_date)}`;
+    return`<div class="reminder-card ${cls}">
+      <div><div class="rem-name">${emp?.name||r.employee_id}</div><div class="rem-type">${REM_LABELS[r.reminder_type]||r.reminder_type} — ${REM_ACTIONS[r.reminder_type]||''}</div>${r.email_status==='sent'?`<div style="font-size:11px;color:var(--green);margin-top:2px;">📧 Email sent ${r.sent_at?fmtShort(r.sent_at):''}</div>`:''}</div>
+      <div><div class="rem-date">${daysStr}</div><div style="margin-top:6px;"><button class="btn-sm" onclick="openDismissReminder('${r.id}','${emp?.name||r.employee_id}','${REM_LABELS[r.reminder_type]||r.reminder_type}')">Dismiss</button></div></div>
+    </div>`;
+  }).join('');
+}
+function openDismissReminder(id,name,type){dismissingRemId=id;document.getElementById('dismiss-detail').textContent=`Mark "${type}" for ${name} as done?`;document.getElementById('dismiss-by').value='';document.getElementById('modal-dismiss-reminder').style.display='flex';}
+async function confirmDismiss(){const by=document.getElementById('dismiss-by').value.trim();if(!by){alert('Please enter your name.');return;}await db.from('anniversary_reminders').update({email_status:'dismissed',dismissed_by:by,dismissed_at:new Date().toISOString()}).eq('id',dismissingRemId);closeModal('modal-dismiss-reminder');await loadReminders();renderReminders();}
+
+// ── CALENDAR ──────────────────────────────
+function changeMonth(d){calMonth+=d;if(calMonth>11){calMonth=0;calYear++;}else if(calMonth<0){calMonth=11;calYear--;}renderCalendar();}
+
+function getDeptPrefix(empId){
+  if(!empId)return'O';
+  const p=empId[0].toUpperCase();
+  return['D','O','R','W'].includes(p)?p:'O';
+}
+
+function getCalName(empId, empName){
+  // Full first name (could be two parts like "Sa Hyun") + last initial
+  const name = empName||empId;
+  const parts = name.trim().split(/\s+/);
+  if(parts.length===1) return parts[0];
+  const last = parts[parts.length-1];
+  const firstParts = parts.slice(0,-1).join(' ');
+  return `${firstParts} ${last[0].toUpperCase()}.`;
+}
+
+function renderCalendar(){
+  document.getElementById('cal-month-label').textContent=new Date(calYear,calMonth,1).toLocaleDateString('en-US',{month:'long',year:'numeric'});
+  const approved=allRequests.filter(r=>r.status==='approved');
+  const holArr=HOL[calYear]||[];
+  const todayStr=fmt8601(new Date());
+  const firstDow=new Date(calYear,calMonth,1).getDay();
+  const daysInMo=new Date(calYear,calMonth+1,0).getDate();
+  const prevDays=new Date(calYear,calMonth,0).getDate();
+
+  const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  let html=days.map(d=>`<div class="cal-hdr">${d}</div>`).join('');
+
+  for(let i=0;i<firstDow;i++)html+=`<div class="cal-day other-month"><div class="cal-date">${prevDays-firstDow+1+i}</div></div>`;
+
+  for(let d=1;d<=daysInMo;d++){
+    const ds=`${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dow=new Date(calYear,calMonth,d).getDay();
+    const wknd=dow===0||dow===6,hol=holArr.includes(ds),isToday=ds===todayStr;
+    const deptOrder={D:0,O:1,R:2,W:3};
+    const dayReqsSorted=[...approved.filter(r=>r.start_date<=ds&&r.end_date>=ds&&!wknd)]
+      .sort((a,b)=>{
+        const da=deptOrder[getDeptPrefix(a.employee_id)]??9;
+        const db=deptOrder[getDeptPrefix(b.employee_id)]??9;
+        if(da!==db)return da-db;
+        const na=allEmployees.find(e=>e.id===a.employee_id)?.name||a.employee_name;
+        const nb=allEmployees.find(e=>e.id===b.employee_id)?.name||b.employee_name;
+        return na.localeCompare(nb);
+      });
+    const dayAbs=allAbsences.filter(a=>a.absence_date===ds&&!wknd);
+
+    let cls='cal-day';
+    if(wknd)cls+=' weekend';
+    if(isToday)cls+=' today';
+    if(hol&&!wknd)cls+=' holiday';
+
+    let inner=`<div class="cal-date">${d}</div>`;
+    if(hol&&!wknd)inner+=`<div class="cal-event holiday">🗓 ${HOL_NAMES[ds]||'Holiday'}</div>`;
+
+    dayReqsSorted.forEach(r=>{
+      const emp=allEmployees.find(e=>e.id===r.employee_id);
+      const displayName=getCalName(r.employee_id, emp?.name||r.employee_name);
+      const dept=getDeptPrefix(r.employee_id);
+      const isPartial=r.partial_day;
+      const partialNote=isPartial?` ◑ ${r.total_hours}h`:'';
+      const title=`${emp?.name||r.employee_name} — ${r.request_type}${isPartial?' (partial '+r.total_hours+'h)':''}`;
+      inner+=`<div class="cal-event dept-${dept}${isPartial?' partial':''}" title="${title}">${displayName}${partialNote}</div>`;
+    });
+
+    dayAbs.forEach(a=>{
+      const emp=allEmployees.find(e=>e.id===a.employee_id);
+      const displayName=getCalName(a.employee_id, emp?.name||a.employee_id);
+      inner+=`<div class="cal-event unexcused" title="${displayName} — unexcused absence">${displayName}</div>`;
+    });
+
+    html+=`<div class="${cls}">${inner}</div>`;
+  }
+
+  const total=firstDow+daysInMo;const rem=total%7===0?0:7-(total%7);
+  for(let i=1;i<=rem;i++)html+=`<div class="cal-day other-month"><div class="cal-date">${i}</div></div>`;
+  document.getElementById('cal-grid').innerHTML=html;
+
+  // Simple headcount bar — just totals per department, no math
+  const deptColors={D:'#d97706',O:'#2563eb',R:'#16a34a',W:'#7c3aed'};
+  const deptLabels={D:'Drivers',O:'Office',R:'Retail',W:'Warehouse'};
+  const counts={D:0,O:0,R:0,W:0};
+  allEmployees.filter(e=>!e.terminated).forEach(e=>{
+    const p=getDeptPrefix(e.id);
+    if(counts[p]!==undefined)counts[p]++;
+  });
+  document.getElementById('cal-dept-summary').innerHTML=`
+    <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;padding:7px 12px;background:white;border:1px solid var(--gray-200);border-radius:8px;font-size:12px;width:100%;">
+      <span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--gray-400);">Headcount</span>
+      ${Object.entries(deptLabels).map(([k,label])=>counts[k]>0?`
+        <span style="display:flex;align-items:center;gap:5px;">
+          <span style="width:8px;height:8px;border-radius:50%;background:${deptColors[k]};display:inline-block;flex-shrink:0;"></span>
+          <span style="color:var(--gray-500);">${label}</span>
+          <strong style="color:var(--navy);">${counts[k]}</strong>
+        </span>`:''
+      ).join('')}
+    </div>`;
+}
+
+// ── HISTORY ───────────────────────────────
+function setHistoryFilter(f,btn){histFilter=f;document.querySelectorAll('#pane-history .filter-chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderHistory();}
+function filterHistory(q){histSearch=q.toLowerCase();renderHistory();}
+function renderHistory(){
+  let reqs=[...allRequests];
+  if(histFilter!=='all')reqs=reqs.filter(r=>r.status===histFilter);
+  if(histSearch)reqs=reqs.filter(r=>(r.employee_name||'').toLowerCase().includes(histSearch)||(r.employee_id||'').toLowerCase().includes(histSearch));
+  let html='';
+  if(!reqs.length)html='<tr><td colspan="10" class="empty">No requests found.</td></tr>';
+  reqs.forEach(r=>{
+    const isMgrEntry=(r.notes||'').startsWith('[Manager entry]');
+
+    // Build the Hours cell — only show a breakdown when more than one bank was actually used
+    const banksUsed=[(r.sick_hours||0)>0&&`Sick ${r.sick_hours}h`,(r.vacation_hours||0)>0&&`Vacation ${r.vacation_hours}h`,(r.unpaid_excused_hours||0)>0&&`Unpaid ${r.unpaid_excused_hours}h`,(r.paid_excused_hours||0)>0&&`Paid excused ${r.paid_excused_hours}h`].filter(Boolean);
+    const hoursLabel=banksUsed.length>1
+      ?`<strong>${r.total_hours}h</strong><div style="font-size:10px;color:var(--gray-400);">${banksUsed.join(' + ')}</div>`
+      :`<strong>${r.total_hours}h</strong>`;
+    const partialTag=r.partial_day?`<div style="font-size:10px;color:var(--amber);" title="${r.partial_detail||''}">◑ partial${r.partial_reason?' — '+r.partial_reason.replace('_',' '):''}</div>`:'';
+
+    html+=`<tr><td><div class="emp-name">${r.employee_name}</div><div class="emp-id">${r.employee_id}</div></td>
+      <td><span class="badge ${r.request_type}">${r.request_type.replace('_',' ')}</span>${isMgrEntry?'<span class="badge" style="background:var(--steel-bg);color:var(--navy-mid);font-size:10px;margin-left:2px;">MGR</span>':''}</td>
+      <td style="white-space:nowrap;">${fmtShort(r.start_date)}${r.start_date!==r.end_date?' – '+fmtShort(r.end_date):''}</td>
+      <td class="right">${hoursLabel}${partialTag}</td>
+      <td style="font-size:12px;color:${r.requires_approval?'var(--amber)':'var(--gray-400)'};">${r.request_type==='sick'?'—':r.notice_days!==null?r.notice_days+'d':'?'}</td>
+      <td>${r.manager_override_bank?`<span class="badge overridden">→ ${r.manager_override_bank}</span>`:'—'}</td>
+      <td><span class="badge ${r.status}">${r.status.toUpperCase()}</span></td>
+      <td style="font-size:12px;color:var(--gray-500);">${r.approved_by||'—'}</td>
+      <td style="font-size:12px;color:var(--gray-400);">${new Date(r.submitted_at).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'2-digit'})}</td>
+      <td>${isMgrEntry?`<button class="btn-sm" onclick="openEditHistory('${r.id}')">Edit</button>`:'—'}</td>
+    </tr>`;
+  });
+  document.getElementById('history-tbody').innerHTML=html;
+}
+
+function openEditHistory(id){
+  const r=allRequests.find(r=>r.id===id);if(!r)return;
+  editingHistoryId=id;
+  mgrTotalHours=r.total_hours;
+  mgrBorrowConfirmed=false;
+  // Fully clear any leftover override state from a previous edit/create session —
+  // this was the source of stale hours bleeding into unrelated entries.
+  document.getElementById('mgr-hours-override').checked=false;
+  document.getElementById('mgr-override-field').style.display='none';
+  document.getElementById('mgr-override-hrs').value='';
+  document.getElementById('mgr-override-note').textContent='';
+  document.getElementById('mgr-log-delete-row').style.display='block';
+  document.getElementById('mgr-log-title').textContent='✏️ Edit time off entry';
+  document.getElementById('mgr-log-save-btn').textContent='Save changes';
+  buildMgrEmpOptions();
+  const emp=allEmployees.find(e=>e.id===r.employee_id);
+  selectMgrEmp(r.employee_id,emp?.name||r.employee_name);
+  document.getElementById('mgr-emp-search').disabled=true;
+  document.getElementById('mgr-log-start').value=r.start_date;
+  document.getElementById('mgr-log-end').value=r.end_date;
+  document.getElementById('mgr-log-end').disabled=false;
+  document.getElementById('mgr-partial').checked=r.partial_day||false;
+  document.getElementById('mgr-partial-fields').style.display=r.partial_day?'block':'none';
+  if(r.partial_day)document.getElementById('mgr-partial-hrs').value=r.total_hours;
+  document.getElementById('mgr-log-by').value=r.approved_by||'';
+  document.getElementById('mgr-log-notes').value=(r.notes||'').replace('[Manager entry]','').replace('[Manager entry] ','').trim();
+  document.getElementById('mgr-log-err').style.display='none';
+  const days=r.partial_day?null:Math.round(r.total_hours/8);
+  document.getElementById('mgr-hours-text').textContent=r.partial_day?`${r.total_hours}h — partial day`:`${days} workday${days!==1?'s':''} · ${r.total_hours}h total`;
+  document.getElementById('mgr-hours-sub').textContent='';
+  document.getElementById('mgr-hours-override-row').style.display=(!r.partial_day&&days>1)?'block':'none';
+  document.getElementById('mgr-hours-summary').style.display='block';
+  document.getElementById('mgr-bank-section').style.display='block';
+  // Populate the underlying fields from stored hours
+  document.getElementById('mgr-split-sick').value=r.sick_hours||0;
+  document.getElementById('mgr-split-vac').value=r.vacation_hours||0;
+  document.getElementById('mgr-split-unpaid').value=r.unpaid_excused_hours||0;
+  document.getElementById('mgr-split-paid').value=r.paid_excused_hours||0;
+  // Decide which mode to show: single-choice if exactly one bank was used, split mode otherwise
+  const banksUsed=[(r.sick_hours||0)>0&&'sick',(r.vacation_hours||0)>0&&'vacation',(r.unpaid_excused_hours||0)>0&&'unpaid_excused',(r.paid_excused_hours||0)>0&&'paid_excused'].filter(Boolean);
+  if(banksUsed.length===1){
+    document.getElementById('mgr-single-mode').style.display='block';
+    document.getElementById('mgr-split-mode').style.display='none';
+    document.querySelectorAll('.mgr-choice-card').forEach(c=>c.classList.toggle('selected',c.dataset.bank===banksUsed[0]));
+  } else {
+    document.getElementById('mgr-single-mode').style.display='none';
+    document.getElementById('mgr-split-mode').style.display='block';
+  }
+  updateMgrSplitTotal();
+  document.getElementById('mgr-coverage-warn').style.display='none';
+  mgrLogDirty=false;
+  document.getElementById('modal-mgr-log').style.display='flex';
+}
+
+async function confirmEditHistory(){
+  // same as confirmMgrLog but in edit mode — handled by editingHistoryId check above
+  await confirmMgrLog();
+  document.getElementById('mgr-emp-search').disabled=false;
+}
+
+async function confirmDeleteHistory(){
+  const r=allRequests.find(r=>r.id===editingHistoryId);if(!r)return;
+  if(!confirm(`Delete this ${r.total_hours}h entry for ${r.employee_name} on ${fmtShort(r.start_date)}? This will also reverse the PTO deduction from their balance.`))return;
+  // Reverse the balance deduction
+  const emp=allEmployees.find(e=>e.id===r.employee_id);
+  if(emp){
+    const u={};
+    const sH=parseFloat(r.sick_hours)||0;const vH=parseFloat(r.vacation_hours)||0;
+    if(sH>0)u.sick_used=Math.max(0,(emp.sick_used||0)-sH);
+    if(vH>0)u.vacation_used=Math.max(0,(emp.vacation_used||0)-vH);
+    if(Object.keys(u).length)await db.from('employees').update(u).eq('id',emp.id);
+  }
+  await db.from('pto_requests').delete().eq('id',editingHistoryId);
+  document.getElementById('mgr-emp-search').disabled=false;
+  mgrLogDirty=false;closeModal('modal-mgr-log');
+  await loadAll();renderHistory();renderBalances();
+  showToast('Entry deleted and balance restored','error');
+}
+function exportHistory(){
+  const hdr=['Employee ID','Name','Type','Start','End','Sick Hrs','Vac Hrs','Total Hrs','Partial','Notice Days','Bank Override','Status','Approved By','Denial Reason','Submitted'];
+  const rows=allRequests.map(r=>[r.employee_id,r.employee_name,r.request_type,r.start_date,r.end_date,r.sick_hours||0,r.vacation_hours||0,r.total_hours,r.partial_day?'Yes':'No',r.notice_days||'',r.manager_override_bank||'',r.status,r.approved_by||'',r.denial_reason||'',new Date(r.submitted_at).toLocaleString()]);
+  dlCSV([hdr,...rows],`RMS_PTO_History_${new Date().toISOString().slice(0,10)}.csv`);
+}
+
+// ── EMPLOYEES ─────────────────────────────
+function filterEmployees(q){empSearch=q.toLowerCase();renderEmployees();}
+function setEmpFilter(f,btn){empFilter=f;document.querySelectorAll('#pane-employees .filter-chip').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderEmployees();}
+function sortEmps(f){if(empSort===f){empDir*=-1;}else{empSort=f;empDir=1;}document.querySelectorAll('.sort-arrow').forEach(s=>s.textContent='');const ae=document.getElementById('sort-'+f);if(ae)ae.textContent=empDir===1?'▲':'▼';renderEmployees();}
+function renderEmployees(){
+  let emps=[...allEmployees];
+  if(empFilter==='active')emps=emps.filter(e=>!e.terminated);
+  else if(empFilter==='terminated')emps=emps.filter(e=>e.terminated);
+  if(empSearch)emps=emps.filter(e=>e.name.toLowerCase().includes(empSearch)||e.id.toLowerCase().includes(empSearch));
+  emps.sort((a,b)=>{let av=a[empSort]||'',bv=b[empSort]||'';if(empSort==='hourly_rate'){av=av||0;bv=bv||0;}if(typeof av==='string')av=av.toLowerCase();if(typeof bv==='string')bv=bv.toLowerCase();return av<bv?-1*empDir:av>bv?empDir:0;});
+  const active=allEmployees.filter(e=>!e.terminated);
+  document.getElementById('employee-kpis').innerHTML=`
+    <div class="kpi info"><div class="kpi-val">${active.length}</div><div class="kpi-lbl">Active employees</div></div>
+    <div class="kpi info"><div class="kpi-val">${active.filter(e=>e.employment_type==='hourly').length}</div><div class="kpi-lbl">Hourly</div></div>
+    <div class="kpi info"><div class="kpi-val">${active.filter(e=>e.employment_type==='salaried').length}</div><div class="kpi-lbl">Salaried</div></div>
+    <div class="kpi ${allEmployees.filter(e=>e.terminated).length>0?'warn':'success'}"><div class="kpi-val">${allEmployees.filter(e=>e.terminated).length}</div><div class="kpi-lbl">Terminated</div></div>`;
+  let html='';
+  if(!emps.length)html='<tr><td colspan="9" class="empty">No employees found.</td></tr>';
+  emps.forEach(e=>{
+    const isSal=e.employment_type==='salaried',isTerm=e.terminated;
+    html+=`<tr style="${isTerm?'opacity:.55;':''}"><td style="font-family:monospace;font-size:12px;">${e.id}</td><td><div class="emp-name">${e.name}</div><div class="emp-id">Login: ${e.last_name||'—'}</div></td><td style="font-size:12px;color:var(--gray-500);">${e.hire_date?fmtShort(e.hire_date):'—'}</td><td><span class="badge ${isSal?'salaried':''}">${isSal?'Salaried':'Hourly'}</span></td><td class="right">${e.hourly_rate?'$'+e.hourly_rate:'—'}</td><td class="right">${isTerm?'—':e.sick_bank_start+'h'}</td><td class="right">${isTerm?'—':e.vacation_bank_start+'h'}</td><td>${isTerm?`<span class="badge terminated">Terminated ${e.termination_date?fmtShort(e.termination_date):''}</span>`:'<span class="badge approved">Active</span>'}</td><td><button class="btn-sm" onclick="openEditEmployee('${e.id}')">Edit</button></td></tr>`;
+  });
+  document.getElementById('emp-tbody').innerHTML=html;
+}
+function toggleEmpType(){const isSal=document.getElementById('emp-type').value==='salaried';document.getElementById('emp-rate-row').style.display=isSal?'none':'block';document.getElementById('emp-rate').disabled=isSal;document.getElementById('emp-salary-row').style.display=isSal?'block':'none';}
+function showAddEmployeeModal(){
+  editingEmpId=null;
+  document.getElementById('emp-modal-title').textContent='Add employee';
+  ['emp-id','emp-bday','emp-first','emp-last','emp-hire','emp-rate','emp-salary','emp-sick','emp-vac'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('emp-id').disabled=false;document.getElementById('emp-type').value='hourly';
+  document.getElementById('emp-err').style.display='none';document.getElementById('emp-archive-row').style.display='none';
+  toggleEmpType();document.getElementById('modal-employee').style.display='flex';
+}
+function openEditEmployee(id){
+  const e=allEmployees.find(e=>e.id===id);if(!e)return;
+  editingEmpId=id;
+  document.getElementById('emp-modal-title').textContent='Edit employee';
+  document.getElementById('emp-id').value=e.id;document.getElementById('emp-id').disabled=true;
+  const lastName=e.last_name||'';let firstMiddle=e.name||'';
+  if(lastName&&firstMiddle.toLowerCase().endsWith(lastName.toLowerCase()))firstMiddle=firstMiddle.slice(0,firstMiddle.length-lastName.length).trim();
+  document.getElementById('emp-first').value=firstMiddle;document.getElementById('emp-last').value=lastName;
+  document.getElementById('emp-hire').value=e.hire_date||'';document.getElementById('emp-bday').value=e.birthday;
+  document.getElementById('emp-type').value=e.employment_type;document.getElementById('emp-rate').value=e.hourly_rate||'';
+  document.getElementById('emp-salary').value=e.annual_salary||'';
+  document.getElementById('emp-sick').value=e.sick_bank_start||'';document.getElementById('emp-vac').value=e.vacation_bank_start||'';
+  document.getElementById('emp-err').style.display='none';document.getElementById('emp-archive-row').style.display='block';
+  toggleEmpType();document.getElementById('modal-employee').style.display='flex';
+}
+async function saveEmployee(){
+  const errEl=document.getElementById('emp-err');
+  const id=document.getElementById('emp-id').value.trim().toUpperCase();
+  const first=document.getElementById('emp-first').value.trim();
+  const last=document.getElementById('emp-last').value.trim();
+  const bday=document.getElementById('emp-bday').value.trim();
+  const type=document.getElementById('emp-type').value;
+  if(!id||!first||!last||!bday){errEl.textContent='ID, first name, last name, and birthday are required.';errEl.style.display='block';return;}
+  if(!/^\d{6}$/.test(bday)){errEl.textContent='Birthday must be 6 digits (MMDDYY).';errEl.style.display='block';return;}
+  const payload={id,name:`${first} ${last}`,last_name:last,hire_date:document.getElementById('emp-hire').value||null,birthday:bday,employment_type:type,hourly_rate:type==='salaried'?null:parseFloat(document.getElementById('emp-rate').value)||null,annual_salary:type==='salaried'?parseFloat(document.getElementById('emp-salary').value)||null:null,sick_bank_start:parseFloat(document.getElementById('emp-sick').value)||0,vacation_bank_start:parseFloat(document.getElementById('emp-vac').value)||0,active:true};
+  let error;
+  if(editingEmpId){({error}=await db.from('employees').update(payload).eq('id',editingEmpId));}
+  else{({error}=await db.from('employees').insert(payload));}
+  if(error){errEl.textContent='Error: '+error.message;errEl.style.display='block';return;}
+  closeModal('modal-employee');await loadAll();renderEmployees();renderBalances();checkAndSendReminders();
+}
+function openTerminateModal(){
+  const e=allEmployees.find(e=>e.id===editingEmpId);if(!e)return;
+  const sR=e.sick_bank_start-e.sick_used,vR=e.vacation_bank_start-e.vacation_used;
+  const eq=e.employment_type==='salaried'?(e.annual_salary?e.annual_salary/2080:null):e.hourly_rate;
+  const rawTotal=sR+vR;
+  const payout=eq?Math.max(0,rawTotal)*eq:null;
+  document.getElementById('terminate-detail').textContent=`Archive ${e.name}? They can no longer submit time off requests.`;
+  document.getElementById('terminate-date').value=fmt8601(new Date());
+  document.getElementById('terminate-payout').value=payout!==null?payout.toFixed(2):'';
+  const debtNote=rawTotal<0?` Note: this employee has a negative balance (${Math.abs(rawTotal).toFixed(1)}h owed back) — payout is floored at $0, this is not automatically deducted from their final check.`:'';
+  document.getElementById('terminate-payout-note').textContent=payout!==null?`${sR.toFixed(1)}h sick + ${vR.toFixed(1)}h vac × $${eq.toFixed(2)}/hr = ${fmtMoney(payout)} owed at termination.${debtNote}`:(e.employment_type==='salaried'?'Add annual salary to estimate payout.':'Add hourly rate to estimate payout.');
+  document.getElementById('terminate-err').style.display='none';
+  closeModal('modal-employee');document.getElementById('modal-terminate').style.display='flex';
+}
+async function confirmTerminate(){
+  const errEl=document.getElementById('terminate-err');
+  const termDate=document.getElementById('terminate-date').value;
+  if(!termDate){errEl.textContent='Please enter a termination date.';errEl.style.display='block';return;}
+  const{error}=await db.from('employees').update({terminated:true,termination_date:termDate,active:false}).eq('id',editingEmpId);
+  if(error){errEl.textContent='Error: '+error.message;errEl.style.display='block';return;}
+  closeModal('modal-terminate');await loadAll();renderEmployees();renderBalances();
+}
+
+// ── RETAINER ──────────────────────────────
+function renderRetainers(){
+  const active=allRetainers.filter(r=>!r.terminated);
+  const total=active.reduce((s,r)=>s+(r.payment_amount||0),0);
+  document.getElementById('retainer-kpis').innerHTML=`
+    <div class="kpi info"><div class="kpi-val">${active.length}</div><div class="kpi-lbl">Active retainer</div></div>
+    <div class="kpi success"><div class="kpi-val">${fmtMoney(total)}</div><div class="kpi-lbl">Per period total</div></div>
+    <div class="kpi info"><div class="kpi-val">${fmtMoney(total*24)}</div><div class="kpi-lbl">Annual (24 periods)</div></div>`;
+  let html='';
+  allRetainers.forEach(r=>{html+=`<tr style="${r.terminated?'opacity:.55;':''}"><td style="font-family:monospace;font-size:12px;">${r.id}</td><td class="emp-name">${r.name}</td><td><span class="badge retainer">${r.relationship||'—'}</span></td><td style="font-size:12px;color:var(--gray-500);">${r.hire_date?fmtShort(r.hire_date):'—'}</td><td class="right mono">${fmtMoney(r.payment_amount||0)}</td><td>${r.terminated?'<span class="badge terminated">Terminated</span>':'<span class="badge approved">Active</span>'}</td><td><button class="btn-sm" onclick="openEditRetainer('${r.id}')">Edit</button></td></tr>`;});
+  document.getElementById('retainer-tbody').innerHTML=html;
+}
+function showAddRetainerModal(){editingRetainerId=null;document.getElementById('ret-title').textContent='Add retainer pay';['ret-id','ret-name','ret-amount','ret-hire','ret-notes'].forEach(id=>document.getElementById(id).value='');document.getElementById('ret-id').disabled=false;document.getElementById('ret-rel').value='Owner';document.getElementById('ret-err').style.display='none';document.getElementById('ret-archive-row').style.display='none';document.getElementById('modal-retainer').style.display='flex';}
+function openEditRetainer(id){const r=allRetainers.find(r=>r.id===id);if(!r)return;editingRetainerId=id;document.getElementById('ret-title').textContent='Edit retainer pay';document.getElementById('ret-id').value=r.id;document.getElementById('ret-id').disabled=true;document.getElementById('ret-name').value=r.name;document.getElementById('ret-rel').value=r.relationship||'Owner';document.getElementById('ret-amount').value=r.payment_amount||'';document.getElementById('ret-hire').value=r.hire_date||'';document.getElementById('ret-notes').value=r.notes||'';document.getElementById('ret-err').style.display='none';document.getElementById('ret-archive-row').style.display='block';document.getElementById('modal-retainer').style.display='flex';}
+async function saveRetainer(){
+  const errEl=document.getElementById('ret-err');
+  const id=document.getElementById('ret-id').value.trim().toUpperCase();
+  const name=document.getElementById('ret-name').value.trim();
+  const amt=parseFloat(document.getElementById('ret-amount').value);
+  if(!id||!name||isNaN(amt)){errEl.textContent='ID, name, and amount are required.';errEl.style.display='block';return;}
+  const payload={id,name,relationship:document.getElementById('ret-rel').value,payment_amount:amt,pay_frequency:'semimonthly',hire_date:document.getElementById('ret-hire').value||null,notes:document.getElementById('ret-notes').value.trim()||null,active:true};
+  let error;
+  if(editingRetainerId){({error}=await db.from('retainer_employees').update(payload).eq('id',editingRetainerId));}
+  else{({error}=await db.from('retainer_employees').insert(payload));}
+  if(error){errEl.textContent='Error: '+error.message;errEl.style.display='block';return;}
+  closeModal('modal-retainer');await loadAll();renderRetainers();
+}
+async function terminateRetainer(){
+  if(!editingRetainerId)return;
+  const d=prompt('Termination date (YYYY-MM-DD):',fmt8601(new Date()));if(!d)return;
+  await db.from('retainer_employees').update({terminated:true,termination_date:d,active:false}).eq('id',editingRetainerId);
+  closeModal('modal-retainer');await loadAll();renderRetainers();
+}
+</script>
+</body>
+</html>
