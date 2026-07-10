@@ -1,0 +1,1271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time Off Request — Riverside Medical Supply</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --navy:#0a1f5c;--navy-mid:#1a3578;--navy-light:#2a4a9a;
+    --steel:#b8cce4;--steel-light:#dce8f5;--steel-bg:#f0f5fb;
+    --red:#b91c1c;--red-bg:#fee2e2;--green:#15803d;--green-bg:#dcfce7;
+    --amber:#b45309;--amber-bg:#fef3c7;
+    --gray-100:#f4f6f9;--gray-200:#e4e8ef;--gray-300:#ccd3df;
+    --gray-400:#8d97a8;--gray-500:#5c6778;--gray-700:#2d3748;--gray-900:#0d1117;
+    --radius:8px;--shadow:0 2px 12px rgba(10,31,92,.10);--shadow-lg:0 8px 32px rgba(10,31,92,.14);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif;background:var(--steel-bg);color:var(--gray-900);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 0 3rem;}
+
+  /* HEADER BANNER */
+  .app-banner{width:100%;background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:60px;box-shadow:0 2px 8px rgba(10,31,92,.3);margin-bottom:2rem;}
+  .banner-logo{display:flex;align-items:center;gap:12px;}
+  .banner-logo img{height:38px;width:auto;}
+  .banner-divider{width:1px;height:28px;background:rgba(255,255,255,.2);}
+  .banner-title{color:white;font-size:13px;font-weight:500;letter-spacing:.02em;opacity:.85;}
+  .banner-badge{background:rgba(184,204,228,.2);border:1px solid rgba(184,204,228,.3);color:var(--steel);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.05em;text-transform:uppercase;}
+
+  .page-wrap{width:100%;max-width:520px;padding:0 1rem;}
+
+  .card{background:white;border-radius:12px;padding:1.75rem;width:100%;box-shadow:var(--shadow);border:1px solid var(--gray-200);}
+  .card-title{font-size:18px;font-weight:700;color:var(--navy);margin-bottom:4px;letter-spacing:-.01em;}
+  .card-sub{font-size:13px;color:var(--gray-500);margin-bottom:1.5rem;line-height:1.5;}
+
+  /* STEP PROGRESS */
+  .step{display:none;}.step.active{display:block;}
+  .step-dots{display:flex;gap:6px;margin-bottom:1.5rem;}
+  .step-dot{flex:1;height:3px;border-radius:2px;background:var(--gray-200);transition:background .25s;}
+  .step-dot.done{background:var(--navy-light);}
+  .step-dot.active{background:var(--navy);}
+
+  /* FIELDS */
+  .field{margin-bottom:1rem;}
+  .field label{display:block;font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+  .field input,.field select,.field textarea{width:100%;border:1.5px solid var(--gray-300);border-radius:var(--radius);padding:10px 12px;font-size:16px;color:var(--gray-900);background:white;outline:none;transition:border-color .15s,box-shadow .15s;font-family:inherit;}
+  .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(26,53,120,.12);}
+  .field textarea{resize:vertical;min-height:70px;}
+
+  /* PIN */
+  .pin-row{display:flex;gap:8px;justify-content:center;margin:1rem 0;}
+  .pin-digit{width:50px;height:58px;border:1.5px solid var(--gray-300);border-radius:var(--radius);font-size:22px;font-weight:700;text-align:center;outline:none;transition:border-color .15s,box-shadow .15s;color:var(--navy);font-family:inherit;}
+  .pin-digit:focus{border-color:var(--navy);box-shadow:0 0 0 3px rgba(10,31,92,.12);}
+  .pin-digit.filled{border-color:var(--navy-light);background:var(--steel-bg);}
+
+  /* TYPE CARDS */
+  .type-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem;}
+  .type-card{border:1.5px solid var(--gray-200);border-radius:var(--radius);padding:.875rem;text-align:center;cursor:pointer;transition:all .15s;background:white;}
+  .type-card:hover{border-color:var(--navy-light);background:var(--steel-bg);}
+  .type-card.selected.sick{border-color:#15803d;background:#f0fdf4;}
+  .type-card.selected.vacation{border-color:var(--navy);background:var(--steel-bg);}
+  .type-card.selected.mixed{border-color:var(--navy-mid);background:var(--steel-bg);}
+  .type-card.selected.unpaid_excused{border-color:var(--amber);background:var(--amber-bg);}
+  .type-card .tc-icon{font-size:20px;margin-bottom:4px;}
+  .type-card .tc-name{font-size:13px;font-weight:700;color:var(--navy);}
+  .type-card .tc-desc{font-size:11px;color:var(--gray-400);margin-top:2px;}
+
+  /* BANK SPLIT */
+  .bank-split{background:var(--steel-bg);border:1px solid var(--steel-light);border-radius:var(--radius);padding:12px;margin-bottom:1rem;}
+  .bank-split-title{font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;}
+  .bank-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+  .bank-row:last-child{margin-bottom:0;}
+  .bank-row label{font-size:13px;font-weight:600;flex:1;color:var(--gray-700);}
+  .bank-row input[type=number]{width:90px;border:1.5px solid var(--gray-300);border-radius:6px;padding:6px 8px;font-size:16px;outline:none;text-align:right;}
+  .bank-row input[type=number]:focus{border-color:var(--navy-light);}
+  .bank-row .bal{font-size:11px;color:var(--gray-400);white-space:nowrap;}
+  .bank-total{display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--gray-200);margin-top:8px;font-size:13px;font-weight:700;}
+  .bank-total.ok{color:var(--green);}
+  .bank-total.over{color:var(--red);}
+  .bank-total.under{color:var(--amber);}
+
+  /* PARTIAL */
+  .partial-section{display:none;background:var(--steel-bg);border:1px solid var(--steel-light);border-radius:var(--radius);padding:12px;margin-bottom:1rem;}
+  .partial-section.show{display:block;}
+
+  /* DATES */
+  .date-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .days-badge{background:var(--navy);color:white;border-radius:var(--radius);padding:10px 14px;font-size:13px;font-weight:600;text-align:center;margin-bottom:1rem;letter-spacing:.01em;}
+  .notice-warn{background:var(--amber-bg);border:1px solid #fcd34d;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#92400e;margin-bottom:1rem;display:none;}
+  .notice-warn.show{display:block;}
+
+  /* BALANCE BOX */
+  /* Confirmation cards */
+  .confirm-card{background:var(--steel-bg);border:1px solid var(--steel-light);border-radius:var(--radius);padding:14px 16px;margin-bottom:12px;}
+  .confirm-date{font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;}
+  .confirm-desc{font-size:13px;color:var(--gray-700);line-height:1.5;margin-bottom:10px;}
+  .confirm-actions{display:flex;gap:8px;}
+  .btn-confirm-yes{flex:1;height:38px;background:var(--green);color:white;border:none;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;}
+  .btn-confirm-no{flex:1;height:38px;background:white;color:var(--red);border:1.5px solid #fca5a5;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;}
+  .confirm-done{text-align:center;padding:8px;font-size:13px;color:var(--green);font-weight:600;}
+
+  .bal-box{background:var(--navy);border-radius:var(--radius);padding:14px 16px;margin-bottom:1rem;}
+
+  /* Pending/history request cards */
+  .req-card{background:var(--steel-bg);border:1px solid var(--steel-light);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;}
+  .req-card-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .req-card-dates{font-weight:600;font-size:13px;color:var(--navy);}
+  .req-card-meta{font-size:12px;color:var(--gray-500);margin-top:2px;}
+  .req-status{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:2px 8px;border-radius:10px;}
+  .req-status.pending{background:#fef3c7;color:#92400e;}
+  .req-status.approved{background:#dcfce7;color:#166534;}
+  .req-status.denied{background:#fee2e2;color:#991b1b;}
+  .btn-cancel-req{background:none;border:1px solid #fca5a5;color:var(--red);font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;cursor:pointer;margin-top:8px;}
+
+  /* Per-day breakdown rows */
+  .per-day-row{background:var(--steel-bg);border:1px solid var(--steel-light);border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;}
+  .per-day-row-top{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+  .per-day-date{font-weight:600;font-size:13px;color:var(--navy);}
+  .per-day-full-label{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;color:var(--gray-500);}
+  .per-day-custom-fields{display:none;margin-top:8px;gap:8px;}
+  .per-day-custom-fields.show{display:flex;flex-wrap:wrap;align-items:center;}
+  .per-day-custom-fields input[type="number"]{width:70px;font-size:16px;}
+  .per-day-custom-fields input[type="text"]{flex:1;min-width:140px;font-size:16px;}
+  .btn-apply-all-days{background:var(--steel-bg);border:1px solid var(--steel-light);border-radius:var(--radius);padding:6px 10px;font-size:12px;font-weight:600;color:var(--navy-light);cursor:pointer;white-space:nowrap;}
+  .bal-box-header{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--steel);margin-bottom:8px;}
+  .bal-row{display:flex;justify-content:space-between;font-size:13px;padding:3px 0;border-bottom:1px solid rgba(184,204,228,.15);}
+  .bal-row:last-child{border-bottom:none;}
+  .bal-lbl{color:rgba(255,255,255,.7);}
+  .bal-val{font-weight:700;color:white;}
+  .bal-val.low{color:#fbbf24;}
+  .bal-val.empty{color:#f87171;}
+
+  /* BUTTONS */
+  .btn{width:100%;height:48px;border:none;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;letter-spacing:.02em;transition:all .15s;}
+  .btn-primary{background:var(--navy);color:white;}.btn-primary:hover{background:var(--navy-mid);}
+  .btn-secondary{background:white;color:var(--gray-700);border:1.5px solid var(--gray-300);margin-top:8px;}.btn-secondary:hover{background:var(--gray-100);border-color:var(--gray-400);}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+
+  .err{background:var(--red-bg);border:1px solid #fca5a5;border-radius:var(--radius);padding:10px 14px;font-size:13px;color:var(--red);margin-bottom:1rem;display:none;}
+  .err.show{display:block;}
+
+  /* SUCCESS */
+  .success-card{text-align:center;padding:1rem 0;}
+  .success-icon{font-size:52px;margin-bottom:12px;}
+  .success-title{font-size:20px;font-weight:700;margin-bottom:6px;color:var(--navy);}
+  .success-sub{font-size:14px;color:var(--gray-500);}
+  .summary-box{background:var(--steel-bg);border:1px solid var(--steel-light);border-radius:var(--radius);padding:14px 16px;margin:1rem 0;text-align:left;}
+  .summary-row{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--gray-200);}
+  .summary-row:last-child{border-bottom:none;}
+  .summary-row span:first-child{color:var(--gray-500);}
+  .summary-row span:last-child{font-weight:600;color:var(--navy);}
+
+  .spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .policy-note{font-size:12px;color:var(--gray-400);text-align:center;margin-top:1rem;line-height:1.5;max-width:520px;padding:0 1rem;}
+</style>
+</head>
+<body>
+
+<div class="app-banner">
+  <div class="banner-logo">
+    <img src="logo.png" alt="I E DME Inc.">
+    <div class="banner-divider"></div>
+    <span class="banner-title">Employee Portal</span>
+  </div>
+  <span class="banner-badge">Riverside Medical Supply</span>
+</div>
+
+<div class="page-wrap">
+<div class="card">
+  <div class="step-dots">
+    <div class="step-dot active" id="dot-1"></div>
+    <div class="step-dot" id="dot-2"></div>
+    <div class="step-dot" id="dot-3"></div>
+  </div>
+
+  <!-- STEP 1: Identity -->
+  <div class="step active" id="step-1">
+    <div class="card-title">Who are you?</div>
+    <div class="card-sub">Enter your last name and 6-digit birthday PIN (MMDDYY).</div>
+    <div id="err-1" class="err"></div>
+    <div class="field">
+      <label>Last name</label>
+      <input type="text" id="emp-lastname" placeholder="e.g. Smith" autocomplete="family-name">
+    </div>
+    <div class="field">
+      <label>Birthday PIN (MMDDYY)</label>
+      <div class="pin-row">
+        <input class="pin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit" maxlength="1" type="tel" inputmode="numeric">
+      </div>
+      <div style="font-size:12px;color:var(--gray-400);text-align:center;margin-top:4px;">Jan 5, 1990 → 010590</div>
+    </div>
+    <button class="btn btn-primary" onclick="verifyIdentity()" id="btn-verify">Verify identity →</button>
+  </div>
+
+  <!-- STEP 1.5: Forced first-time PIN change -->
+  <div class="step" id="step-setpin">
+    <div class="card-title">Set your own PIN</div>
+    <div class="card-sub">For your security, choose a new 6-digit PIN that only you know. Your manager will not be able to see it after this.</div>
+    <div id="err-setpin" class="err"></div>
+    <div class="field">
+      <label>New PIN (6 digits)</label>
+      <div class="pin-row" id="newpin-row">
+        <input class="pin-digit newpin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit newpin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit newpin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit newpin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit newpin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit newpin-digit" maxlength="1" type="tel" inputmode="numeric">
+      </div>
+    </div>
+    <div class="field">
+      <label>Confirm new PIN</label>
+      <div class="pin-row" id="confirmpin-row">
+        <input class="pin-digit confirmpin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit confirmpin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit confirmpin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit confirmpin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit confirmpin-digit" maxlength="1" type="tel" inputmode="numeric">
+        <input class="pin-digit confirmpin-digit" maxlength="1" type="tel" inputmode="numeric">
+      </div>
+    </div>
+    <div style="font-size:12px;color:var(--gray-400);text-align:center;margin-bottom:1rem;">Pick something you'll remember — not your birthday. Your manager can reset this if you ever forget it, but won't know it otherwise.</div>
+    <button class="btn btn-primary" onclick="setNewPin()" id="btn-setpin">Save my PIN →</button>
+  </div>
+
+  <!-- STEP 1.75: Pending punch confirmations -->
+  <div class="step" id="step-confirm">
+    <div class="card-title">Please confirm a correction</div>
+    <div class="card-sub">Your manager made a change to your time clock records and wants your confirmation.</div>
+    <div id="confirm-list"></div>
+    <button class="btn btn-secondary" onclick="skipConfirmations()" style="margin-top:1rem;">Continue to time off request →</button>
+  </div>
+
+  <!-- STEP 2: Request details -->
+  <div class="step" id="step-2">
+    <div class="card-title">Request time off</div>
+    <div class="card-sub" id="step2-greeting"></div>
+    <div id="bal-display" class="bal-box" style="display:none;"></div>
+
+    <!-- Your pending requests -->
+    <div id="my-pending-section" style="display:none;margin-bottom:1rem;">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-500);margin-bottom:6px;">Your pending requests</div>
+      <div id="my-pending-list"></div>
+    </div>
+
+    <!-- Your history toggle -->
+    <div style="margin-bottom:1.25rem;">
+      <button type="button" onclick="toggleMyHistory()" id="btn-toggle-history" style="background:none;border:none;color:var(--navy-light);font-size:13px;font-weight:600;cursor:pointer;padding:0;text-decoration:underline;">View my time off history</button>
+      <div id="my-history-section" style="display:none;margin-top:10px;">
+        <div id="my-history-list"></div>
+      </div>
+    </div>
+
+    <!-- Punch history toggle — self-review only, doesn't block anything -->
+    <div style="margin-bottom:1.25rem;">
+      <button type="button" onclick="toggleMyPunches()" id="btn-toggle-punches" style="background:none;border:none;color:var(--navy-light);font-size:13px;font-weight:600;cursor:pointer;padding:0;text-decoration:underline;">View my clock-in/out punches</button>
+      <div id="my-punches-section" style="display:none;margin-top:10px;">
+        <div style="font-size:11px;color:var(--gray-400);margin-bottom:8px;">This is just for your own review — if something looks off (missed a clock-out, wrong time), let your manager know. Reviewing this doesn't approve or hold up anything.</div>
+        <select id="punches-period-select" onchange="renderMyPunches()" style="height:32px;border:1px solid var(--gray-300);border-radius:var(--radius);padding:0 8px;font-size:16px;margin-bottom:10px;width:100%;"></select>
+        <div id="my-punches-list"></div>
+      </div>
+    </div>
+
+    <!-- Date range — comes first, since everything else depends on it -->
+    <div class="field">
+      <label>Dates</label>
+      <div class="date-row">
+        <div><label style="font-size:11px;color:var(--gray-400);">Start</label><input type="date" id="start-date" onchange="onStartDateChange()"></div>
+        <div><label style="font-size:11px;color:var(--gray-400);">End</label><input type="date" id="end-date" onchange="onEndDateChange()"></div>
+      </div>
+    </div>
+
+    <!-- Partial day -->
+    <div class="field">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="is-partial" onchange="togglePartial()" style="width:auto;"> Partial day (less than 8 hours)
+      </label>
+    </div>
+
+    <!-- Per-day customization for multi-day requests -->
+    <div class="field" id="per-day-toggle-wrap" style="display:none;">
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+        <input type="checkbox" id="use-per-day" onchange="togglePerDay()" style="width:auto;"> I don't want the full day off for every date — let me specify each day
+      </label>
+    </div>
+    <div id="per-day-section" style="display:none;margin-bottom:1rem;">
+      <div style="font-size:12px;color:var(--gray-400);margin-bottom:8px;">For each date, mark it as a full day off or specify exactly what you need.</div>
+      <div id="per-day-list"></div>
+    </div>
+
+    <div id="partial-section" class="partial-section">
+      <div class="field" style="margin-bottom:8px;">
+        <label>How many hours?</label>
+        <input type="number" id="partial-hours" placeholder="e.g. 3.5" step="0.5" min="0.5" max="7.5" onchange="onDatesChange()">
+      </div>
+      <div class="field" style="margin-bottom:8px;">
+        <label>Reason</label>
+        <select id="partial-reason">
+          <option value="late_arrival">Late arrival</option>
+          <option value="early_leave">Early leave</option>
+          <option value="both">Both — came in late AND left early</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label>Details</label>
+        <input type="text" id="partial-detail" placeholder="e.g. doctor appointment at 2pm, leaving early">
+      </div>
+    </div>
+
+    <!-- Days display -->
+    <div id="days-display" class="days-badge" style="display:none;"></div>
+    <div id="notice-warn" class="notice-warn"></div>
+
+    <!-- Type selection — comes after dates, since it's naturally the next
+         decision once you know how many days/hours you need covered -->
+    <div class="field">
+      <label>Type of time off</label>
+      <div class="type-grid" id="type-grid">
+        <div class="type-card sick" id="type-sick" onclick="selectType('sick')">
+          <div class="tc-icon">🤒</div>
+          <div class="tc-name">Sick time</div>
+          <div class="tc-desc">Illness, injury, medical</div>
+        </div>
+        <div class="type-card vacation" id="type-vacation" onclick="selectType('vacation')">
+          <div class="tc-icon">✈️</div>
+          <div class="tc-name">Vacation</div>
+          <div class="tc-desc">Planned time off</div>
+        </div>
+        <div class="type-card" id="type-mixed" onclick="selectType('mixed')" style="grid-column:1/-1;">
+          <div class="tc-icon">🔀</div>
+          <div class="tc-name">Split banks</div>
+          <div class="tc-desc">Combine sick, vacation, and/or unpaid excused to cover one absence</div>
+        </div>
+        <div class="type-card unpaid_excused" id="type-unpaid_excused" onclick="selectType('unpaid_excused')" style="grid-column:1/-1;">
+          <div class="tc-icon">📋</div>
+          <div class="tc-name">Unpaid excused</div>
+          <div class="tc-desc">No PTO available — company discretion</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bank split (shown for mixed type) -->
+    <div id="bank-split-section" class="bank-split" style="display:none;">
+      <div class="bank-split-title">Split hours between banks</div>
+      <div class="bank-row">
+        <label>🤒 Sick time</label>
+        <input type="number" id="split-sick" placeholder="0" step="0.5" min="0" oninput="updateSplitTotal()">
+        <span class="bal" id="split-sick-bal"></span>
+      </div>
+      <div class="bank-row">
+        <label>✈️ Vacation</label>
+        <input type="number" id="split-vac" placeholder="0" step="0.5" min="0" oninput="updateSplitTotal()">
+        <span class="bal" id="split-vac-bal"></span>
+      </div>
+      <div class="bank-row">
+        <label>📋 Unpaid excused</label>
+        <input type="number" id="split-unpaid" placeholder="0" step="0.5" min="0" oninput="updateSplitTotal()">
+        <span class="bal"></span>
+      </div>
+      <div id="split-total" class="bank-total"></div>
+    </div>
+
+    <div class="field">
+      <label>Notes <span style="font-weight:400;text-transform:none;">(optional)</span></label>
+      <textarea id="req-notes" placeholder="Any details your manager should know..."></textarea>
+    </div>
+
+    <div id="err-2" class="err"></div>
+    <button class="btn btn-primary" onclick="goToReview()">Review request →</button>
+    <button class="btn btn-secondary" onclick="goStep(1)">← Back</button>
+  </div>
+
+  <!-- STEP 3: Review & submit -->
+  <div class="step" id="step-3">
+    <div class="card-title">Review &amp; submit</div>
+    <div class="card-sub">Check the details below, then submit your request.</div>
+    <div id="err-3" class="err"></div>
+    <div id="review-summary"></div>
+    <button class="btn btn-primary" onclick="submitRequest()" id="btn-submit">Submit request</button>
+    <button class="btn btn-secondary" onclick="goStep(2)">← Edit</button>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="step" id="step-success">
+    <div class="success-card">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Request submitted!</div>
+      <div class="success-sub">Your manager will review it and let you know.</div>
+      <div id="success-summary" class="summary-box" style="margin-top:1.25rem;"></div>
+      <button class="btn btn-secondary" onclick="backToRequestForm()" style="margin-top:1rem;">Submit another request</button>
+      <button class="btn btn-secondary" onclick="startOver()" style="margin-top:.5rem;background:transparent;color:var(--gray-400);box-shadow:none;">Sign out</button>
+    </div>
+  </div>
+</div>
+
+</div><!-- end page-wrap -->
+
+<p class="policy-note">
+  Vacation requires 14 days advance notice to be auto-approved. Sick time can be used same-day without advance notice. Questions? Contact your manager.
+</p>
+
+<script>
+const db = supabase.createClient(RMS_CONFIG.supabase_url, RMS_CONFIG.supabase_anon_key);
+let currentEmployee = null;
+let selectedType = null;
+
+// ── PIN WIRING ────────────────────────────────────────────────
+// Wires auto-advance/backspace/paste for one specific set of PIN boxes.
+// Each row (login, new PIN, confirm PIN) is wired independently so they
+// never bleed into each other, even though they share the same CSS class.
+function wirePinRow(scopeSelector){
+  const digits=document.querySelectorAll(scopeSelector+' .pin-digit');
+  digits.forEach((inp,i,all)=>{
+    inp.addEventListener('input',e=>{
+      const v=e.target.value.replace(/\D/g,'');
+      e.target.value=v.slice(-1);
+      if(v&&i<all.length-1)all[i+1].focus();
+      e.target.classList.toggle('filled',!!v);
+    });
+    inp.addEventListener('keydown',e=>{
+      if(e.key==='Backspace'&&!e.target.value&&i>0){all[i-1].focus();all[i-1].value='';all[i-1].classList.remove('filled');}
+    });
+    inp.addEventListener('paste',e=>{
+      e.preventDefault();
+      const p=(e.clipboardData.getData('text')||'').replace(/\D/g,'').slice(0,6);
+      [...p].forEach((c,j)=>{if(all[j]){all[j].value=c;all[j].classList.add('filled');}});
+      if(all[Math.min(p.length,5)])all[Math.min(p.length,5)].focus();
+    });
+  });
+}
+wirePinRow('#step-1');
+wirePinRow('#newpin-row');
+wirePinRow('#confirmpin-row');
+
+function getPin(){return[...document.querySelectorAll('#step-1 .pin-digit')].map(d=>d.value).join('');}
+function getNewPin(){return[...document.querySelectorAll('#newpin-row .pin-digit')].map(d=>d.value).join('');}
+function getConfirmPin(){return[...document.querySelectorAll('#confirmpin-row .pin-digit')].map(d=>d.value).join('');}
+function clearPinRow(scopeSelector){document.querySelectorAll(scopeSelector+' .pin-digit').forEach(d=>{d.value='';d.classList.remove('filled');});}
+
+// ── NAVIGATION ────────────────────────────────────────────────
+function goStep(n){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.getElementById('step-'+n).classList.add('active');
+  document.querySelectorAll('.step-dot').forEach((d,i)=>{
+    d.classList.remove('active','done');
+    if(i+1<n)d.classList.add('done');
+    else if(i+1===n)d.classList.add('active');
+  });
+  window.scrollTo(0,0);
+}
+function showStep(id){document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
+function showErr(n,msg){const el=document.getElementById('err-'+n);el.textContent=msg;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),6000);}
+
+// ── STEP 1: VERIFY ────────────────────────────────────────────
+async function verifyIdentity(){
+  const lastName=document.getElementById('emp-lastname').value.trim();
+  const pin=getPin();
+  if(!lastName){showErr(1,'Please enter your last name.');return;}
+  if(pin.length!==6){showErr(1,'Please enter your full 6-digit PIN.');return;}
+  const btn=document.getElementById('btn-verify');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Checking...';
+  try{
+    const{data,error}=await db.from('employees')
+      .select('id,name,last_name,birthday,employment_type,sick_bank_start,vacation_bank_start,sick_used,vacation_used,login_pin,must_change_pin')
+      .eq('active',true).eq('login_pin',pin).ilike('last_name',lastName);
+    if(error)throw error;
+    const match=(data||[]).find(e=>(e.last_name||'').toLowerCase()===lastName.toLowerCase());
+    if(!match){showErr(1,'No match found. Check your last name and PIN. If this is your first time, your PIN is your birthday in MMDDYY format.');return;}
+    currentEmployee=match;
+
+    if(match.must_change_pin){
+      clearPinRow('#newpin-row');clearPinRow('#confirmpin-row');
+      document.getElementById('err-setpin').classList.remove('show');
+      showStep('step-setpin');
+      return;
+    }
+    await checkPendingConfirmationsThenProceed();
+  }catch(e){showErr(1,'Connection error. Please try again.');console.error(e);}
+  finally{btn.disabled=false;btn.innerHTML='Verify identity →';}
+}
+
+async function setNewPin(){
+  const newPin=getNewPin();
+  const confirmPin=getConfirmPin();
+  const errEl=document.getElementById('err-setpin');
+  if(newPin.length!==6){showErr('setpin','Please enter a full 6-digit PIN.');return;}
+  if(newPin!==confirmPin){showErr('setpin','The two PINs don\'t match. Please try again.');return;}
+  if(newPin===currentEmployee.birthday){showErr('setpin','Please choose something other than your birthday — that\'s the whole point!');return;}
+  const btn=document.getElementById('btn-setpin');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Saving...';
+  try{
+    const{error}=await db.from('employees').update({login_pin:newPin,must_change_pin:false}).eq('id',currentEmployee.id);
+    if(error)throw error;
+    currentEmployee.login_pin=newPin;currentEmployee.must_change_pin=false;
+    await checkPendingConfirmationsThenProceed();
+  }catch(e){showErr('setpin','Something went wrong saving your PIN. Please try again.');console.error(e);}
+  finally{btn.disabled=false;btn.innerHTML='Save my PIN →';}
+}
+
+async function checkPendingConfirmationsThenProceed(){
+  // Check for any punch corrections awaiting this employee's confirmation
+  // before sending them to the regular request form.
+  const{data:pending}=await db.from('punch_confirmations')
+    .select('*').eq('employee_id',currentEmployee.id).eq('status','pending').order('punch_date',{ascending:false});
+  if(pending&&pending.length){
+    showPendingConfirmations(pending);
+    showStep('step-confirm');
+  } else {
+    await setupStep2();goStep(2);
+  }
+}
+
+// ── PENDING PUNCH CONFIRMATIONS ─────────────────────────────────
+function showPendingConfirmations(list){
+  const el=document.getElementById('confirm-list');
+  el.innerHTML=list.map(c=>`
+    <div class="confirm-card" id="confirm-card-${c.id}">
+      <div class="confirm-date">${new Date(c.punch_date+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'})}</div>
+      <div class="confirm-desc">${c.description}</div>
+      <div class="confirm-actions">
+        <button class="btn-confirm-yes" onclick="respondToConfirmation('${c.id}','confirmed')">✓ Yes, that's correct</button>
+        <button class="btn-confirm-no" onclick="respondToConfirmation('${c.id}','disputed')">That's not right</button>
+      </div>
+    </div>`).join('');
+}
+
+async function respondToConfirmation(id,status){
+  let note=null;
+  if(status==='disputed'){
+    note=prompt('What happened instead? (This will be shared with your manager)');
+    if(note===null)return; // cancelled
+  }
+  try{
+    await db.from('punch_confirmations').update({
+      status,responded_at:new Date().toISOString(),response_note:note
+    }).eq('id',id);
+    const card=document.getElementById('confirm-card-'+id);
+    if(card)card.innerHTML=`<div class="confirm-done">${status==='confirmed'?'✓ Confirmed — thank you!':'Noted — your manager will follow up.'}</div>`;
+  }catch(e){alert('Something went wrong, please try again.');}
+}
+
+async function skipConfirmations(){
+  await setupStep2();goStep(2);
+}
+
+// Shared date formatter — weekday, month, day, year.
+const fmtD=d=>d?new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'}):'';
+
+let myRequests=[];
+
+async function loadMyRequests(){
+  const{data}=await db.from('pto_requests').select('*').eq('employee_id',currentEmployee.id).order('start_date',{ascending:false});
+  myRequests=data||[];
+}
+
+// ── STEP 2: SETUP ─────────────────────────────────────────────
+async function setupStep2(){
+  const firstName=currentEmployee.name.split(' ')[0];
+  document.getElementById('step2-greeting').textContent=`Hi ${firstName}! Fill out your time off request below.`;
+
+  await loadMyRequests();
+
+  // Pending requests already reserve hours against the bank — showing the
+  // raw remaining balance without accounting for them would let someone
+  // accidentally request the same hours twice before the first request is
+  // even reviewed.
+  const pending=myRequests.filter(r=>r.status==='pending');
+  const pendingSickH=pending.reduce((s,r)=>s+(parseFloat(r.sick_hours)||0),0);
+  const pendingVacH=pending.reduce((s,r)=>s+(parseFloat(r.vacation_hours)||0),0);
+
+  const sickRem=(currentEmployee.sick_bank_start-currentEmployee.sick_used)-pendingSickH;
+  const vacRem=(currentEmployee.vacation_bank_start-currentEmployee.vacation_used)-pendingVacH;
+  const balEl=document.getElementById('bal-display');
+  if(currentEmployee.sick_bank_start>0||currentEmployee.vacation_bank_start>0){
+    balEl.innerHTML=`
+      <div class="bal-box-header">Your PTO Balances</div>
+      <div class="bal-row"><span class="bal-lbl">🤒 Sick remaining</span><span class="bal-val ${sickRem<=0?'empty':sickRem<8?'low':''}">${sickRem.toFixed(1)}h</span></div>
+      <div class="bal-row"><span class="bal-lbl">✈️ Vacation remaining</span><span class="bal-val ${vacRem<=0?'empty':vacRem<8?'low':''}">${vacRem.toFixed(1)}h</span></div>
+      ${(pendingSickH>0||pendingVacH>0)?`<div style="font-size:11px;color:rgba(255,255,255,.6);margin-top:6px;">Already accounts for ${[pendingSickH>0?pendingSickH.toFixed(1)+'h sick':'',pendingVacH>0?pendingVacH.toFixed(1)+'h vacation':''].filter(Boolean).join(' + ')} awaiting approval</div>`:''}`;
+    balEl.style.display='block';
+  }
+  document.getElementById('split-sick-bal').textContent=`(${sickRem.toFixed(1)}h avail)`;
+  document.getElementById('split-vac-bal').textContent=`(${vacRem.toFixed(1)}h avail)`;
+  const now=new Date();
+  const today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  document.getElementById('start-date').min=today;
+  document.getElementById('end-date').min=today;
+
+  renderMyPending();
+  // Refresh history in place if it's currently open
+  if(document.getElementById('my-history-section').style.display==='block')renderMyHistory();
+}
+
+function typeLabelFor(r){
+  return r.request_type==='sick'?'Sick':r.request_type==='vacation'?'Vacation':r.request_type==='mixed'?'Split (sick + vacation)':r.request_type==='paid_excused'?'Paid excused':'Unpaid excused';
+}
+
+function renderMyPending(){
+  const pending=myRequests.filter(r=>r.status==='pending');
+  const sec=document.getElementById('my-pending-section');
+  const list=document.getElementById('my-pending-list');
+  if(!pending.length){sec.style.display='none';return;}
+  sec.style.display='block';
+  list.innerHTML=pending.map(r=>{
+    const dateStr=r.start_date===r.end_date?fmtD(r.start_date):`${fmtD(r.start_date)} – ${fmtD(r.end_date)}`;
+    const overrides=r.partial_day_overrides;
+    const overridesNote=(overrides&&overrides.length)?`<div style="font-size:12px;color:var(--gray-500);margin-top:6px;">
+        <strong>Day breakdown:</strong> ${overrides.map(o=>`${fmtD(o.date)}: ${o.hours}h (${o.detail})`).join(' · ')} — other days in range are full days.
+      </div>`:'';
+    return`<div class="req-card">
+      <div class="req-card-top">
+        <div>
+          <div class="req-card-dates">${dateStr}</div>
+          <div class="req-card-meta">${typeLabelFor(r)} · ${r.total_hours}h${r.partial_day?' (partial day)':''}</div>
+        </div>
+        <span class="req-status pending">Pending</span>
+      </div>
+      ${overridesNote}
+      <button type="button" class="btn-cancel-req" onclick="cancelMyRequest('${r.id}')">Cancel this request</button>
+    </div>`;
+  }).join('');
+}
+
+async function cancelMyRequest(id){
+  if(!confirm('Cancel this pending request? This cannot be undone.'))return;
+  try{
+    const cancelled=myRequests.find(r=>r.id===id);
+    const{error}=await db.from('pto_requests').delete().eq('id',id).eq('status','pending');
+    if(error)throw error;
+    if(RMS_CONFIG.formspree_endpoint&&!RMS_CONFIG.formspree_endpoint.includes('YOUR_')&&cancelled){
+      fetch(RMS_CONFIG.formspree_endpoint,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify({
+          subject:`Time Off Request Cancelled — ${currentEmployee.name}`,
+          employee:currentEmployee.name,
+          note:`Cancelled their own pending request for ${cancelled.start_date}${cancelled.start_date!==cancelled.end_date?' to '+cancelled.end_date:''} (${cancelled.total_hours}h, ${cancelled.request_type}). No action needed — just letting you know it's off your plate.`,
+          cancelled_at:new Date().toLocaleString(),
+        })
+      }).catch(()=>{});
+    }
+    await setupStep2();
+  }catch(e){alert('Something went wrong canceling this request. Please try again or see your manager.');}
+}
+
+function toggleMyHistory(){
+  const sec=document.getElementById('my-history-section');
+  const btn=document.getElementById('btn-toggle-history');
+  const showing=sec.style.display==='block';
+  sec.style.display=showing?'none':'block';
+  btn.textContent=showing?'View my time off history':'Hide my time off history';
+  if(!showing)renderMyHistory();
+}
+
+function renderMyHistory(){
+  const history=myRequests.filter(r=>r.status!=='pending').sort((a,b)=>b.start_date.localeCompare(a.start_date));
+  const list=document.getElementById('my-history-list');
+  if(!history.length){list.innerHTML='<div style="font-size:13px;color:var(--gray-400);">No past requests yet.</div>';return;}
+  list.innerHTML=history.map(r=>{
+    const dateStr=r.start_date===r.end_date?fmtD(r.start_date):`${fmtD(r.start_date)} – ${fmtD(r.end_date)}`;
+    const wasModified=r.status==='approved'&&r.manager_override_bank;
+    const modifiedNote=wasModified?`<div style="font-size:12px;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:6px 8px;margin-top:6px;color:#92400e;">
+        ⚠ <strong>Approved with changes</strong> — you originally requested <em>${typeLabelFor({request_type:r.original_request_type||r.request_type})}</em>, but it was approved as: ${bankBreakdownText(r)}
+      </div>`:'';
+    const overrides=r.partial_day_overrides;
+    const overridesNote=(overrides&&overrides.length)?`<div style="font-size:12px;color:var(--gray-500);margin-top:6px;">
+        <strong>Day breakdown:</strong> ${overrides.map(o=>`${fmtD(o.date)}: ${o.hours}h (${o.detail})`).join(' · ')} — other days in range were full days.
+      </div>`:'';
+    return`<div class="req-card">
+      <div class="req-card-top">
+        <div>
+          <div class="req-card-dates">${dateStr}</div>
+          <div class="req-card-meta">${typeLabelFor(r)} · ${r.total_hours}h${r.partial_day?' (partial day)':''}</div>
+        </div>
+        <span class="req-status ${r.status}">${wasModified?'Approved (modified)':r.status}</span>
+      </div>
+      ${modifiedNote}
+      ${overridesNote}
+      ${r.status==='denied'&&r.denial_reason?`<div style="font-size:12px;color:var(--red);margin-top:6px;">Reason: ${r.denial_reason}</div>`:''}
+    </div>`;
+  }).join('');
+}
+
+function bankBreakdownText(r){
+  const parts=[];
+  if((r.sick_hours||0)>0)parts.push(`${r.sick_hours}h sick`);
+  if((r.vacation_hours||0)>0)parts.push(`${r.vacation_hours}h vacation`);
+  if((r.unpaid_excused_hours||0)>0)parts.push(`${r.unpaid_excused_hours}h unpaid excused`);
+  if((r.paid_excused_hours||0)>0)parts.push(`${r.paid_excused_hours}h paid excused`);
+  return parts.join(' + ')||'—';
+}
+
+// ── PUNCH HISTORY (self-review only — never blocks or approves anything) ──
+let myPunches=[];
+
+async function toggleMyPunches(){
+  const sec=document.getElementById('my-punches-section');
+  const btn=document.getElementById('btn-toggle-punches');
+  const showing=sec.style.display==='block';
+  sec.style.display=showing?'none':'block';
+  btn.textContent=showing?'View my clock-in/out punches':'Hide my clock-in/out punches';
+  if(!showing){
+    const{data}=await db.from('attendance_records').select('*').eq('employee_id',currentEmployee.id).order('record_date',{ascending:false});
+    myPunches=data||[];
+    const periods=[...new Set(myPunches.map(r=>r.pay_period_start))].sort().reverse();
+    const sel=document.getElementById('punches-period-select');
+    sel.innerHTML=periods.map((p,i)=>`<option value="${p}" ${i===0?'selected':''}>Pay period starting ${fmtD(p)}</option>`).join('')||'<option value="">No punch data yet</option>';
+    renderMyPunches();
+  }
+}
+
+function renderMyPunches(){
+  const period=document.getElementById('punches-period-select').value;
+  const recs=myPunches.filter(r=>r.pay_period_start===period).sort((a,b)=>a.record_date.localeCompare(b.record_date));
+  const list=document.getElementById('my-punches-list');
+  if(!recs.length){list.innerHTML='<div style="font-size:13px;color:var(--gray-400);">No punch data for this period yet.</div>';return;}
+  const rows=recs.map(r=>{
+    const missingOut=r.actual_start&&!r.actual_end;
+    // Hours shown here already reflect the same rounding used for pay —
+    // not the exact raw punch time — so this number should always match
+    // what actually shows up on a paycheck.
+    const hoursText=r.total_worked_minutes?(r.total_worked_minutes/60).toFixed(2)+'h':'—';
+    return`<tr style="${missingOut?'background:#fef2f2;':''}">
+      <td style="padding:7px 6px;font-weight:600;white-space:nowrap;">${fmtD(r.record_date).replace(/,\s\d{4}$/,'')}</td>
+      <td style="padding:7px 6px;text-align:center;">${r.actual_start?r.actual_start.slice(0,5):'—'}</td>
+      <td style="padding:7px 6px;text-align:center;">${r.lunch_start?r.lunch_start.slice(0,5):'—'}</td>
+      <td style="padding:7px 6px;text-align:center;">${r.lunch_end?r.lunch_end.slice(0,5):'—'}</td>
+      <td style="padding:7px 6px;text-align:center;color:${missingOut?'var(--red)':'inherit'};font-weight:${missingOut?'700':'400'};">${r.actual_end?r.actual_end.slice(0,5):(missingOut?'Missing ⚠':'—')}</td>
+      <td style="padding:7px 6px;text-align:right;font-weight:600;">${hoursText}</td>
+    </tr>`;
+  }).join('');
+  const anyMissing=recs.some(r=>r.actual_start&&!r.actual_end);
+  list.innerHTML=`
+    <div style="overflow-x:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="border-bottom:2px solid var(--gray-200);color:var(--gray-400);font-size:11px;text-transform:uppercase;letter-spacing:.03em;">
+            <th style="text-align:left;padding:6px;">Date</th>
+            <th style="text-align:center;padding:6px;">Clock In</th>
+            <th style="text-align:center;padding:6px;">Lunch Out</th>
+            <th style="text-align:center;padding:6px;">Lunch In</th>
+            <th style="text-align:center;padding:6px;">Clock Out</th>
+            <th style="text-align:right;padding:6px;">Hours</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    ${anyMissing?'<div style="font-size:12px;color:var(--red);margin-top:8px;">⚠ One or more days show no clock-out found — let your manager know if this doesn\'t look right.</div>':''}`;
+}
+
+
+function selectType(type){
+  selectedType=type;
+  document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('type-'+type)?.classList.add('selected');
+  document.getElementById('bank-split-section').style.display=type==='mixed'?'block':'none';
+  onDatesChange();
+}
+
+function togglePartial(){
+  const isPartial=document.getElementById('is-partial').checked;
+  document.getElementById('partial-section').classList.toggle('show',isPartial);
+  // force single day when partial
+  if(isPartial){
+    const start=document.getElementById('start-date').value;
+    if(start)document.getElementById('end-date').value=start;
+    document.getElementById('end-date').disabled=true;
+  }else{
+    document.getElementById('end-date').disabled=false;
+  }
+  onDatesChange();
+}
+
+function countWorkdays(start,end){
+  let count=0,d=new Date(start+'T12:00:00'),e=new Date(end+'T12:00:00');
+  while(d<=e){const dow=d.getDay();if(dow>0&&dow<6)count++;d.setDate(d.getDate()+1);}
+  return count;
+}
+
+function isValidISODate(s){
+  // Must be exactly YYYY-MM-DD with a plausible 4-digit year
+  return /^\d{4}-\d{2}-\d{2}$/.test(s) && parseInt(s.slice(0,4))>=2020 && parseInt(s.slice(0,4))<=2100;
+}
+
+// Fires ONLY when the START date changes. Its only job: pre-fill end date
+// as a convenience if it's currently empty — never overwrites an end date
+// the user already set. This, plus never writing into either field from
+// the OTHER field's own change handler, is what actually fixes the
+// "jumps back to the previous month" bug — that was caused by the old
+// shared handler overwriting a field mid-edit.
+function onStartDateChange(){
+  const start=document.getElementById('start-date');
+  const end=document.getElementById('end-date');
+  const isPartial=document.getElementById('is-partial').checked;
+  if(isPartial){
+    if(isValidISODate(start.value))end.value=start.value;
+  } else if(!end.value&&isValidISODate(start.value)){
+    end.value=start.value;
+  }
+  recalcRequestSummary();
+}
+
+// Fires ONLY when the END date changes. Never writes to either date field.
+function onEndDateChange(){
+  recalcRequestSummary();
+}
+
+function recalcRequestSummary(){
+  const start=document.getElementById('start-date').value;
+  const end=document.getElementById('end-date').value;
+  const isPartial=document.getElementById('is-partial').checked;
+  const dispEl=document.getElementById('days-display');
+  const warnEl=document.getElementById('notice-warn');
+  const perDayWrap=document.getElementById('per-day-toggle-wrap');
+  if(!start||!end||!isValidISODate(start)||!isValidISODate(end)){dispEl.style.display='none';perDayWrap.style.display='none';return;}
+
+  // Per-day customization only makes sense for a genuine multi-day, non-partial range
+  const isMultiDay=!isPartial&&start!==end&&end>=start;
+  perDayWrap.style.display=isMultiDay?'block':'none';
+  if(!isMultiDay&&document.getElementById('use-per-day').checked){
+    document.getElementById('use-per-day').checked=false;
+    togglePerDay();
+  }
+
+  let totalHours;
+  if(isPartial){
+    const ph=parseFloat(document.getElementById('partial-hours').value)||0;
+    totalHours=ph;
+    dispEl.textContent=`${ph}h partial day`;
+  }else{
+    if(end<start){dispEl.textContent='End date is before start date — please check your dates.';dispEl.style.display='block';return;}
+    const days=countWorkdays(start,end);
+    totalHours=days*8;
+    dispEl.textContent=`${days} workday${days!==1?'s':''} · ${totalHours}h`;
+  }
+  dispEl.style.display=(totalHours>0&&!document.getElementById('use-per-day').checked)?'block':'none';
+
+  if(document.getElementById('use-per-day').checked)buildPerDayList();
+
+  // Vacation notice check
+  if(selectedType==='vacation'||selectedType==='mixed'){
+    const noticeDays=Math.round((new Date(start+'T12:00:00')-new Date())/86400000);
+    if(noticeDays<RMS_CONFIG.vacation_notice_days){
+      warnEl.innerHTML=`⚠️ <strong>Short notice:</strong> This starts in ${noticeDays} day${noticeDays!==1?'s':''}. Policy requires ${RMS_CONFIG.vacation_notice_days} days advance notice. Your request will need manager approval.`;
+      warnEl.classList.add('show');
+    }else warnEl.classList.remove('show');
+  }else warnEl.classList.remove('show');
+
+  // Update split total
+  if(selectedType==='mixed')updateSplitTotal();
+}
+
+// Kept as an alias so any other call sites (partial toggle, type change,
+// etc.) that still call the old name keep working without hunting down
+// every reference.
+function onDatesChange(){recalcRequestSummary();}
+
+// ── PER-DAY BREAKDOWN (multi-day requests where not every day is a full day off) ──
+function togglePerDay(){
+  const on=document.getElementById('use-per-day').checked;
+  document.getElementById('per-day-section').style.display=on?'block':'none';
+  document.getElementById('days-display').style.display=on?'none':'block';
+  if(on)buildPerDayList();
+  if(selectedType==='mixed')updateSplitTotal();
+}
+
+// Enumerates each workday in the selected range and renders one row per
+// day — full day by default, switchable to a custom amount + description
+// (e.g. "3pm-5pm" or "half day, doctor appointment").
+function buildPerDayList(){
+  const start=document.getElementById('start-date').value;
+  const end=document.getElementById('end-date').value;
+  if(!isValidISODate(start)||!isValidISODate(end)||end<start)return;
+  const list=document.getElementById('per-day-list');
+  let d=new Date(start+'T12:00:00');
+  const en=new Date(end+'T12:00:00');
+  const days=[];
+  while(d<=en){
+    const dow=d.getDay();
+    if(dow!==0&&dow!==6){ // skip weekends, matching countWorkdays elsewhere
+      const iso=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      days.push(iso);
+    }
+    d.setDate(d.getDate()+1);
+  }
+  // Preserve any values already entered if the list is being rebuilt
+  const existing={};
+  list.querySelectorAll('.per-day-row').forEach(row=>{
+    const iso=row.dataset.date;
+    existing[iso]={
+      full:row.querySelector('.per-day-full-cb').checked,
+      hours:row.querySelector('.per-day-hours')?.value||'',
+      detail:row.querySelector('.per-day-detail')?.value||''
+    };
+  });
+  list.innerHTML=days.map(iso=>{
+    const prev=existing[iso];
+    const isFull=prev?prev.full:true;
+    const dLabel=fmtD(iso);
+    return`<div class="per-day-row" data-date="${iso}">
+      <div class="per-day-row-top">
+        <div class="per-day-date">${dLabel}</div>
+        <label class="per-day-full-label">
+          <input type="checkbox" class="per-day-full-cb" ${isFull?'checked':''} onchange="onPerDayFullToggle(this)" style="width:auto;"> Full day (8h)
+        </label>
+      </div>
+      <div class="per-day-custom-fields${isFull?'':' show'}">
+        <input type="number" class="per-day-hours" placeholder="Hours" step="0.5" min="0.5" max="7.5" value="${prev?.hours||''}" oninput="onPerDayInputChange()">
+        <input type="text" class="per-day-detail" placeholder="e.g. 3pm-5pm, or arriving late" value="${prev?.detail||''}" oninput="onPerDayInputChange()">
+        <button type="button" class="btn-apply-all-days" onclick="applyPerDayToAll(this)">Apply to all days</button>
+      </div>
+    </div>`;
+  }).join('');
+  onPerDayInputChange();
+}
+
+function onPerDayFullToggle(cb){
+  const fields=cb.closest('.per-day-row').querySelector('.per-day-custom-fields');
+  fields.classList.toggle('show',!cb.checked);
+  onPerDayInputChange();
+}
+
+// Copies this day's hours and description to every other day in the
+// list — useful when the same reduced hours apply across many days,
+// instead of typing the same thing in over and over.
+function applyPerDayToAll(btn){
+  const sourceRow=btn.closest('.per-day-row');
+  const hours=sourceRow.querySelector('.per-day-hours').value;
+  const detail=sourceRow.querySelector('.per-day-detail').value;
+  if(!hours||!detail){alert('Please fill in both hours and a description for this day first, then tap Apply to all days.');return;}
+  document.querySelectorAll('#per-day-list .per-day-row').forEach(row=>{
+    if(row===sourceRow)return;
+    row.querySelector('.per-day-full-cb').checked=false;
+    row.querySelector('.per-day-custom-fields').classList.add('show');
+    row.querySelector('.per-day-hours').value=hours;
+    row.querySelector('.per-day-detail').value=detail;
+  });
+  onPerDayInputChange();
+}
+
+function onPerDayInputChange(){
+  if(selectedType==='mixed')updateSplitTotal();
+}
+
+// Returns the current per-day breakdown as an array of
+// {date, hours, isFull, detail} — used both for live totals and actual
+// submission. Returns null if any custom day is missing required info.
+function getPerDayBreakdown(){
+  const rows=[...document.querySelectorAll('#per-day-list .per-day-row')];
+  const result=[];
+  for(const row of rows){
+    const iso=row.dataset.date;
+    const isFull=row.querySelector('.per-day-full-cb').checked;
+    if(isFull){
+      result.push({date:iso,hours:8,isFull:true,detail:''});
+    } else {
+      const hours=parseFloat(row.querySelector('.per-day-hours').value)||0;
+      const detail=row.querySelector('.per-day-detail').value.trim();
+      if(hours<=0||!detail)return null; // incomplete — caller shows an error
+      result.push({date:iso,hours,isFull:false,detail});
+    }
+  }
+  return result;
+}
+
+function perDayTotalHours(){
+  const bd=getPerDayBreakdown();
+  return bd?Math.round(bd.reduce((s,d)=>s+d.hours,0)*100)/100:0;
+}
+
+function updateSplitTotal(){
+  const sick=parseFloat(document.getElementById('split-sick').value)||0;
+  const vac=parseFloat(document.getElementById('split-vac').value)||0;
+  const unpaid=parseFloat(document.getElementById('split-unpaid').value)||0;
+  const isPartial=document.getElementById('is-partial').checked;
+  const usePerDay=document.getElementById('use-per-day').checked;
+  const ph=parseFloat(document.getElementById('partial-hours').value)||0;
+  const start=document.getElementById('start-date').value;
+  const end=document.getElementById('end-date').value;
+  let target=0;
+  if(isPartial)target=ph;
+  else if(usePerDay)target=perDayTotalHours();
+  else if(start&&end)target=countWorkdays(start,end)*8;
+  const total=sick+vac+unpaid;
+  const el=document.getElementById('split-total');
+  const diff=total-target;
+  let cls='ok',msg=`Total: ${total}h / ${target}h needed`;
+  if(Math.abs(diff)>0.01){
+    cls=diff>0?'over':'under';
+    msg+=diff>0?` (${diff.toFixed(1)}h over)`:`(${Math.abs(diff).toFixed(1)}h short)`;
+  }
+  el.className='bank-total '+cls;
+  el.innerHTML=`<span>${msg}</span>`;
+}
+
+// ── STEP 3: REVIEW ────────────────────────────────────────────
+function goToReview(){
+  if(!selectedType){showErr(2,'Please select a type of time off.');return;}
+  const start=document.getElementById('start-date').value;
+  const end=document.getElementById('end-date').value;
+  const isPartial=document.getElementById('is-partial').checked;
+  const usePerDay=document.getElementById('use-per-day').checked;
+  if(!start||!end){showErr(2,'Please select dates.');return;}
+
+  const ph=parseFloat(document.getElementById('partial-hours').value)||0;
+  if(isPartial&&ph<=0){showErr(2,'Please enter how many hours for the partial day.');return;}
+  if(isPartial&&!document.getElementById('partial-detail').value.trim()){showErr(2,'Please add details for the partial day request.');return;}
+
+  let perDayBreakdown=null;
+  if(usePerDay){
+    perDayBreakdown=getPerDayBreakdown();
+    if(!perDayBreakdown){showErr(2,'Please enter both hours and a description for every day that isn\'t a full day off.');return;}
+  }
+
+  const totalHours=isPartial?ph:usePerDay?Math.round(perDayBreakdown.reduce((s,d)=>s+d.hours,0)*100)/100:countWorkdays(start,end)*8;
+  const sickHrs=selectedType==='sick'?totalHours:selectedType==='mixed'?(parseFloat(document.getElementById('split-sick').value)||0):0;
+  const vacHrs=selectedType==='vacation'?totalHours:selectedType==='mixed'?(parseFloat(document.getElementById('split-vac').value)||0):0;
+  const unpaidHrs=selectedType==='unpaid_excused'?totalHours:selectedType==='mixed'?(parseFloat(document.getElementById('split-unpaid').value)||0):0;
+  const sickRem=currentEmployee.sick_bank_start-currentEmployee.sick_used;
+  const vacRem=currentEmployee.vacation_bank_start-currentEmployee.vacation_used;
+
+  // Balance checks
+  if(sickHrs>sickRem){showErr(2,`You only have ${sickRem.toFixed(1)}h sick time remaining but need ${sickHrs}h.`);return;}
+  if(vacHrs>vacRem){showErr(2,`You only have ${vacRem.toFixed(1)}h vacation remaining but need ${vacHrs}h.`);return;}
+  if(selectedType==='mixed'&&Math.abs(sickHrs+vacHrs+unpaidHrs-totalHours)>0.01){showErr(2,'Split hours must add up to the total hours needed.');return;}
+
+  const fmtD=d=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric',year:'numeric'});
+  const noticeDays=selectedType==='vacation'||selectedType==='mixed'?Math.round((new Date(start+'T12:00:00')-new Date())/86400000):null;
+  const needsApproval=noticeDays!==null&&noticeDays<RMS_CONFIG.vacation_notice_days;
+
+  let bankLine='';
+  if(selectedType==='sick')bankLine='🤒 Sick time';
+  else if(selectedType==='vacation')bankLine='✈️ Vacation';
+  else if(selectedType==='mixed'){
+    const parts=[];
+    if(sickHrs>0)parts.push(`${sickHrs}h sick`);
+    if(vacHrs>0)parts.push(`${vacHrs}h vacation`);
+    if(unpaidHrs>0)parts.push(`${unpaidHrs}h unpaid excused`);
+    bankLine=`🔀 Split: ${parts.join(' + ')}`;
+  }
+  else bankLine='📋 Unpaid excused';
+
+  const perDayHtml=usePerDay?`<div style="margin-top:10px;">
+      <div style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--gray-400);margin-bottom:6px;">Day-by-day breakdown</div>
+      ${perDayBreakdown.map(d=>`<div class="summary-row"><span>${fmtD(d.date)}</span><span>${d.isFull?'Full day (8h)':`${d.hours}h — ${d.detail}`}</span></div>`).join('')}
+    </div>`:'';
+
+  document.getElementById('review-summary').innerHTML=`
+    <div class="summary-box">
+      <div class="summary-row"><span>Employee</span><span>${currentEmployee.name}</span></div>
+      <div class="summary-row"><span>Type</span><span>${bankLine}</span></div>
+      <div class="summary-row"><span>${isPartial?'Date':'Start'}</span><span>${fmtD(start)}</span></div>
+      ${!isPartial?`<div class="summary-row"><span>End</span><span>${fmtD(end)}</span></div>`:''}
+      <div class="summary-row"><span>Total</span><span>${totalHours}h${isPartial?' (partial day)':''}</span></div>
+      ${isPartial?`<div class="summary-row"><span>Reason</span><span>${document.getElementById('partial-detail').value}</span></div>`:''}
+      ${perDayHtml}
+      ${document.getElementById('req-notes').value?`<div class="summary-row"><span>Notes</span><span style="max-width:200px;text-align:right;">${document.getElementById('req-notes').value}</span></div>`:''}
+      ${needsApproval?`<div style="margin-top:8px;padding:8px;background:var(--amber-bg);border-radius:6px;font-size:12px;color:#92400e;">⚠️ Short notice — requires manager approval</div>`:''}
+    </div>`;
+  goStep(3);
+}
+
+// ── SUBMIT ────────────────────────────────────────────────────
+async function submitRequest(){
+  const btn=document.getElementById('btn-submit');
+  btn.disabled=true;btn.innerHTML='<span class="spinner"></span> Submitting...';
+
+  const start=document.getElementById('start-date').value;
+  const end=document.getElementById('end-date').value;
+  if(!isValidISODate(start)||!isValidISODate(end)){
+    showErr(2,'One of the dates looks invalid (check the year is 4 digits, e.g. 2026). Please re-enter both dates.');
+    btn.disabled=false;btn.innerHTML='Submit request';
+    return;
+  }
+  if(end<start){
+    showErr(2,'End date cannot be before start date.');
+    btn.disabled=false;btn.innerHTML='Submit request';
+    return;
+  }
+  const isPartial=document.getElementById('is-partial').checked;
+  const usePerDay=document.getElementById('use-per-day').checked;
+  const ph=parseFloat(document.getElementById('partial-hours').value)||0;
+
+  let perDayBreakdown=null;
+  if(usePerDay){
+    perDayBreakdown=getPerDayBreakdown();
+    if(!perDayBreakdown){
+      showErr(2,'Please enter both hours and a description for every day that isn\'t a full day off.');
+      btn.disabled=false;btn.innerHTML='Submit request';
+      return;
+    }
+  }
+
+  const totalHours=isPartial?ph:usePerDay?Math.round(perDayBreakdown.reduce((s,d)=>s+d.hours,0)*100)/100:countWorkdays(start,end)*8;
+  const totalDays=isPartial?ph/8:usePerDay?perDayBreakdown.length:countWorkdays(start,end);
+  const sickHrs=selectedType==='sick'?totalHours:selectedType==='mixed'?(parseFloat(document.getElementById('split-sick').value)||0):0;
+  const vacHrs=selectedType==='vacation'?totalHours:selectedType==='mixed'?(parseFloat(document.getElementById('split-vac').value)||0):0;
+  const unpaidHrs=selectedType==='unpaid_excused'?totalHours:selectedType==='mixed'?(parseFloat(document.getElementById('split-unpaid').value)||0):0;
+  const noticeDays=selectedType==='vacation'||selectedType==='mixed'?Math.round((new Date(start+'T12:00:00')-new Date())/86400000):null;
+  const needsApproval=noticeDays!==null&&noticeDays<RMS_CONFIG.vacation_notice_days;
+
+  try{
+    // Check for an existing pending or approved request that overlaps these
+    // dates — this is a warning, not a hard block. They can still submit;
+    // their manager will catch and reconcile it on their end regardless.
+    const{data:existing}=await db.from('pto_requests')
+      .select('id,start_date,end_date,status,request_type')
+      .eq('employee_id',currentEmployee.id)
+      .in('status',['pending','approved'])
+      .lte('start_date',end)
+      .gte('end_date',start);
+
+    if(existing&&existing.length>0){
+      const dup=existing[0];
+      const dupDates=dup.start_date===dup.end_date?fmtD(dup.start_date):`${fmtD(dup.start_date)} – ${fmtD(dup.end_date)}`;
+      const proceed=confirm(`Heads up: you already have a ${dup.status} request covering ${dupDates}, which overlaps with this one. Submit anyway?`);
+      if(!proceed){
+        btn.disabled=false;btn.innerHTML='Submit request';
+        return;
+      }
+    }
+
+    const reqType=selectedType==='unpaid_excused'?'unpaid_excused':selectedType;
+    const notes=document.getElementById('req-notes').value||null;
+
+    if(usePerDay){
+      // ONE row for the whole request, same as any other multi-day
+      // request — total_hours is just the sum across every day. The only
+      // difference is partial_day_overrides: a JSON list of just the days
+      // that AREN'T full 8-hour days, each with their own hours and
+      // description. Full days in the range aren't listed at all. This
+      // keeps a 10-day request as one History entry instead of ten.
+      const overrides=perDayBreakdown.filter(d=>!d.isFull).map(d=>({date:d.date,hours:d.hours,detail:d.detail}));
+      const{error}=await db.from('pto_requests').insert({
+        employee_id:currentEmployee.id,
+        employee_name:currentEmployee.name,
+        request_type:reqType,
+        start_date:start,
+        end_date:end,
+        total_days:totalDays,
+        total_hours:totalHours,
+        sick_hours:sickHrs,
+        vacation_hours:vacHrs,
+        unpaid_excused_hours:unpaidHrs,
+        partial_day:false,
+        partial_day_overrides:overrides,
+        notes:notes,
+        status:'pending',
+        notice_days:noticeDays,
+        requires_approval:needsApproval,
+      });
+      if(error)throw error;
+    } else {
+      const{error}=await db.from('pto_requests').insert({
+        employee_id:currentEmployee.id,
+        employee_name:currentEmployee.name,
+        request_type:reqType,
+        start_date:start,
+        end_date:end,
+        total_days:totalDays,
+        total_hours:totalHours,
+        sick_hours:sickHrs,
+        vacation_hours:vacHrs,
+        unpaid_excused_hours:unpaidHrs,
+        partial_day:isPartial,
+        partial_reason:isPartial?document.getElementById('partial-reason').value:null,
+        partial_detail:isPartial?document.getElementById('partial-detail').value:null,
+        notes:notes,
+        status:'pending',
+        notice_days:noticeDays,
+        requires_approval:needsApproval,
+      });
+      if(error)throw error;
+    }
+
+    // Formspree notification
+    if(RMS_CONFIG.formspree_endpoint&&!RMS_CONFIG.formspree_endpoint.includes('YOUR_')){
+      await fetch(RMS_CONFIG.formspree_endpoint,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify({
+          subject:`New Time Off Request — ${currentEmployee.name}`,
+          employee:currentEmployee.name,
+          type:selectedType,
+          start_date:start,end_date:end,
+          total_hours:totalHours,
+          sick_hours:sickHrs,vacation_hours:vacHrs,
+          partial_day:isPartial?'Yes':(usePerDay?'Per-day breakdown':'No'),
+          notice_days:noticeDays||'N/A',
+          requires_approval:needsApproval?'YES':'No',
+          notes:document.getElementById('req-notes').value||'(none)',
+          submitted_at:new Date().toLocaleString(),
+        })
+      });
+    }
+
+    const fmtD2=d=>new Date(d+'T12:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    document.getElementById('success-summary').innerHTML=`
+      <div class="summary-row"><span>Type</span><span>${selectedType==='sick'?'🤒 Sick':selectedType==='vacation'?'✈️ Vacation':selectedType==='mixed'?'🔀 Split banks':'📋 Unpaid excused'}</span></div>
+      <div class="summary-row"><span>Dates</span><span>${fmtD2(start)}${start!==end?' – '+fmtD2(end):''}</span></div>
+      <div class="summary-row"><span>Total</span><span>${totalHours}h${isPartial?' (partial)':''}${usePerDay?' (per-day breakdown)':''}</span></div>`;
+    showStep('step-success');
+  }catch(e){
+    showErr(3,'Something went wrong. Please try again or see your manager.');
+    btn.disabled=false;btn.innerHTML='Submit request';
+  }
+}
+
+// Resets the request form fields (so a stale date/type doesn't carry over)
+// without touching the session — stays signed in, unlike startOver().
+async function backToRequestForm(){
+  selectedType=null;
+  document.getElementById('start-date').value='';
+  document.getElementById('end-date').value='';
+  document.getElementById('end-date').disabled=false;
+  document.getElementById('req-notes').value='';
+  document.getElementById('is-partial').checked=false;
+  document.getElementById('partial-section').classList.remove('show');
+  document.getElementById('partial-hours').value='';
+  document.getElementById('partial-detail').value='';
+  document.getElementById('split-sick').value='';
+  document.getElementById('split-vac').value='';
+  document.getElementById('split-unpaid').value='';
+  document.getElementById('use-per-day').checked=false;
+  document.getElementById('per-day-section').style.display='none';
+  document.getElementById('per-day-list').innerHTML='';
+  document.getElementById('bank-split-section').style.display='none';
+  document.getElementById('days-display').style.display='none';
+  document.getElementById('notice-warn').classList.remove('show');
+  document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('selected'));
+  await setupStep2();
+  goStep(2);
+}
+
+function startOver(){
+  currentEmployee=null;selectedType=null;
+  document.getElementById('emp-lastname').value='';
+  clearPinRow('#step-1');
+  document.getElementById('start-date').value='';
+  document.getElementById('end-date').value='';
+  document.getElementById('end-date').disabled=false;
+  document.getElementById('req-notes').value='';
+  document.getElementById('is-partial').checked=false;
+  document.getElementById('partial-section').classList.remove('show');
+  document.getElementById('partial-hours').value='';
+  document.getElementById('partial-detail').value='';
+  document.getElementById('split-sick').value='';
+  document.getElementById('split-vac').value='';
+  document.getElementById('split-unpaid').value='';
+  document.getElementById('use-per-day').checked=false;
+  document.getElementById('per-day-section').style.display='none';
+  document.getElementById('per-day-list').innerHTML='';
+  document.getElementById('bank-split-section').style.display='none';
+  document.getElementById('days-display').style.display='none';
+  document.getElementById('notice-warn').classList.remove('show');
+  document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('selected'));
+  goStep(1);
+}
+
+document.getElementById('emp-lastname').addEventListener('keydown',e=>{if(e.key==='Enter')document.querySelector('#step-1 .pin-digit').focus();});
+</script>
+</body>
+</html>
