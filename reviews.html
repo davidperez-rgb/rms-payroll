@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Performance Reviews — Riverside Medical Supply</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --navy:#0a1f5c;--navy-mid:#1a3578;--navy-light:#2a4a9a;
+    --steel:#b8cce4;--steel-light:#dce8f5;--steel-bg:#f0f5fb;
+    --red:#b91c1c;--red-bg:#fee2e2;--green:#15803d;--green-bg:#dcfce7;
+    --amber:#b45309;--amber-bg:#fef3c7;
+    --gray-100:#f4f6f9;--gray-200:#e4e8ef;--gray-300:#ccd3df;
+    --gray-400:#8d97a8;--gray-500:#5c6778;--gray-700:#2d3748;--gray-900:#0d1117;
+    --radius:8px;--shadow:0 2px 12px rgba(10,31,92,.10);--shadow-lg:0 8px 32px rgba(10,31,92,.14);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','Inter',sans-serif;background:var(--steel-bg);color:var(--gray-900);min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:0 0 3rem;}
+  .app-banner{width:100%;background:var(--navy);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;height:60px;box-shadow:0 2px 8px rgba(10,31,92,.3);margin-bottom:2rem;}
+  .banner-title{color:white;font-size:14px;font-weight:600;letter-spacing:.02em;}
+  .banner-badge{background:rgba(184,204,228,.2);border:1px solid rgba(184,204,228,.3);color:var(--steel);font-size:11px;font-weight:600;padding:3px 10px;border-radius:20px;letter-spacing:.05em;text-transform:uppercase;}
+  .logout-link{color:var(--steel);font-size:12px;cursor:pointer;text-decoration:underline;}
+  .page-wrap{width:100%;max-width:640px;padding:0 1rem;}
+  .page-wrap.wide{max-width:1240px;}
+  .checkin-layout{display:grid;grid-template-columns:340px 1fr;gap:16px;align-items:start;}
+  .role-snapshot-card{position:sticky;top:16px;}
+  @media (max-width:900px){.checkin-layout{grid-template-columns:1fr;}.role-snapshot-card{position:static;}}
+  .rs-purpose{font-size:13.5px;color:var(--gray-700);font-style:italic;line-height:1.5;padding:10px 12px;background:var(--steel-bg);border-left:3px solid var(--navy-light);border-radius:6px;margin-bottom:14px;}
+  .rs-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-400);margin:14px 0 6px;}
+  .rs-section-label:first-of-type{margin-top:0;}
+  .rs-item{font-size:12.5px;color:var(--gray-700);padding:5px 0;border-bottom:1px solid var(--gray-100);line-height:1.4;}
+  .rs-item:last-child{border-bottom:none;}
+  .rs-item .rs-sub{color:var(--gray-400);font-size:11px;margin-top:2px;}
+  .rs-group-label{font-size:11px;font-weight:600;color:var(--navy-light);margin:8px 0 2px;}
+  .org-tree-row{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:6px;cursor:pointer;}
+  .org-tree-row:hover{background:var(--gray-100);}
+  .org-tree-children{margin-left:11px;border-left:2px solid var(--gray-200);padding-left:14px;}
+  .org-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .org-dot.red{background:var(--red);}
+  .org-dot.amber{background:var(--amber);}
+  .org-dot.green{background:var(--green);}
+  .org-dot.gray{background:var(--gray-300);}
+  .org-name{font-size:13px;font-weight:600;color:var(--gray-900);}
+  .org-role{font-size:11px;color:var(--gray-400);margin-left:6px;}
+  .org-signal{font-size:10.5px;font-weight:700;margin-left:auto;padding:2px 8px;border-radius:10px;white-space:nowrap;}
+  .org-signal.red{background:var(--red-bg);color:var(--red);}
+  .org-signal.amber{background:var(--amber-bg);color:var(--amber);}
+  .org-signal.green{background:var(--green-bg);color:var(--green);}
+  .org-signal.gray{background:var(--gray-100);color:var(--gray-400);}
+  .card{background:white;border-radius:12px;padding:1.75rem;width:100%;box-shadow:var(--shadow);border:1px solid var(--gray-200);margin-bottom:1.25rem;}
+  .card-title{font-size:18px;font-weight:700;color:var(--navy);margin-bottom:4px;letter-spacing:-.01em;}
+  .card-sub{font-size:13px;color:var(--gray-500);margin-bottom:1.5rem;line-height:1.5;}
+  .field{margin-bottom:1rem;}
+  .field label{display:block;font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;}
+  .field input,.field select,.field textarea{width:100%;border:1.5px solid var(--gray-300);border-radius:var(--radius);padding:10px 12px;font-size:15px;color:var(--gray-900);background:white;outline:none;transition:border-color .15s,box-shadow .15s;font-family:inherit;}
+  .field textarea{min-height:90px;resize:vertical;line-height:1.5;}
+  .field textarea.tall{min-height:130px;}
+  .field input:focus,.field select:focus{border-color:var(--navy-light);box-shadow:0 0 0 3px rgba(26,53,120,.12);}
+  .field-check{display:flex;align-items:center;gap:8px;margin-bottom:1rem;}
+  .field-check input{width:auto;}
+  .btn{width:100%;height:46px;border:none;border-radius:var(--radius);font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s;}
+  .btn:hover{opacity:.92;}
+  .btn-primary{background:var(--navy);color:white;}
+  .btn-secondary{background:white;color:var(--navy);border:1.5px solid var(--gray-300);}
+  .err{background:var(--red-bg);color:var(--red);border:1px solid #fca5a5;border-radius:var(--radius);padding:10px 12px;font-size:13px;margin-bottom:1rem;display:none;}
+  .err.show{display:block;}
+  .success{background:var(--green-bg);color:var(--green);border:1px solid #86efac;border-radius:var(--radius);padding:10px 12px;font-size:13px;margin-bottom:1rem;display:none;}
+  .success.show{display:block;}
+  .step{display:none;}.step.active{display:block;}
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.35);border-top-color:white;border-radius:50%;animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .team-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px;margin-bottom:4px;}
+  .team-card{border:1px solid var(--gray-200);border-radius:10px;padding:10px 12px;cursor:pointer;transition:box-shadow .15s ease,transform .15s ease;background:white;}
+  .team-card:hover{box-shadow:var(--shadow);transform:translateY(-1px);}
+  .team-card.indirect{background:var(--gray-100);}
+  .team-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--gray-100);cursor:pointer;}
+  .team-row:last-child{border-bottom:none;}
+  .team-card-top{display:flex;align-items:center;justify-content:space-between;gap:6px;}
+  .team-name{font-weight:600;font-size:13.5px;color:var(--gray-900);}
+  .team-card.indirect .team-name{font-weight:500;color:var(--gray-700);}
+  .team-badge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;flex-shrink:0;}
+  .team-badge.direct{background:var(--navy);color:white;}
+  .team-section-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--gray-400);margin:14px 0 6px;}
+  .team-section-label:first-child{margin-top:0;}
+  .team-subgroup-label{font-size:12px;font-weight:600;color:var(--navy-light);margin:10px 0 5px 2px;}
+  .team-subgroup-label:first-of-type{margin-top:4px;}
+  .overview-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:1.25rem;}
+  .overview-card{background:white;border:1px solid var(--gray-200);border-left:3px solid var(--gray-200);border-radius:10px;padding:12px 14px;box-shadow:var(--shadow);}
+  .overview-val{font-size:22px;font-weight:800;color:var(--navy);line-height:1;}
+  .overview-lbl{font-size:11px;color:var(--gray-500);margin-top:5px;}
+  .overview-card.warn{border-left-color:var(--amber);}
+  .overview-card.warn .overview-val{color:var(--amber);}
+  .overview-card.good{border-left-color:var(--green);}
+  .overview-card.good .overview-val{color:var(--green);}
+  .badge{font-size:10.5px;font-weight:700;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;}
+  .badge-comp{background:var(--steel-bg);color:var(--navy);border:1px solid var(--steel);}
+  .empty{color:var(--gray-400);font-size:13px;font-style:italic;padding:1rem 0;text-align:center;}
+  .person-badges{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;}
+  .pbadge{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;white-space:nowrap;}
+  .pbadge.draft{background:var(--steel-bg);color:var(--navy);border:1px solid var(--steel);}
+  .pbadge.discuss{background:var(--amber-bg);color:var(--amber);border:1px solid #fcd34d;}
+  .pbadge.qdone{background:var(--green-bg);color:var(--green);border:1px solid #86efac;}
+  .pbadge.qmissing{background:var(--red-bg);color:var(--red);border:1px solid #fca5a5;}
+  .manager-list-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--gray-100);font-size:13px;}
+  .assess-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:8px 4px;border-bottom:1px solid var(--gray-100);}
+  .assess-row:last-child{border-bottom:none;}
+  .assess-text{font-size:13px;color:var(--gray-700);flex:1;}
+  .assess-buttons{display:flex;gap:4px;flex-shrink:0;}
+  .assess-btn{font-size:11px;font-weight:700;padding:4px 10px;border-radius:14px;border:1.5px solid var(--gray-300);background:white;color:var(--gray-500);cursor:pointer;}
+  .assess-btn.met.active{background:var(--green-bg);border-color:#86efac;color:var(--green);}
+  .assess-btn.notmet.active{background:var(--red-bg);border-color:#fca5a5;color:var(--red);}
+  .assess-note{margin-top:6px;width:100%;}
+</style>
+</head>
+<body>
+
+<div class="app-banner">
+  <span class="banner-title">Performance Reviews <span class="banner-badge" id="company-badge">RMS</span></span>
+  <span class="logout-link" id="logout-link" onclick="doLogout()" style="display:none;">Log out</span>
+</div>
+
+<div class="page-wrap" id="page-wrap">
+
+  <!-- STEP: LOGIN -->
+  <div class="step active" id="step-login">
+    <div class="card">
+      <div class="card-title">Manager sign in</div>
+      <div class="card-sub">Sign in with your company email to review your team.</div>
+      <div class="err" id="err-login"></div>
+      <div class="field"><label>Email</label><input type="email" id="login-email" autocomplete="username"></div>
+      <div class="field"><label>Password</label><input type="password" id="login-password" autocomplete="current-password"></div>
+      <button class="btn btn-primary" id="btn-login" onclick="doLogin()">Sign in</button>
+    </div>
+  </div>
+
+  <!-- STEP: FORCED FIRST-TIME PASSWORD CHANGE -->
+  <div class="step" id="step-setpassword">
+    <div class="card">
+      <div class="card-title">Set your own password</div>
+      <div class="card-sub">For your security, choose a new password that only you know. Nobody else, including the VP, can see it after this.</div>
+      <div class="err" id="err-setpassword"></div>
+      <div class="field"><label>New password (8+ characters)</label><input type="password" id="newpass-1" autocomplete="new-password"></div>
+      <div class="field"><label>Confirm new password</label><input type="password" id="newpass-2" autocomplete="new-password"></div>
+      <button class="btn btn-primary" id="btn-setpassword" onclick="setNewPassword()">Save my password →</button>
+    </div>
+  </div>
+
+  <!-- STEP: HOME -->
+  <div class="step" id="step-home">
+    <div id="overview-strip" class="overview-strip"></div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div>
+          <div class="card-title" id="home-greeting">Your team</div>
+          <div class="card-sub">Everyone in your reporting chain, with where each person stands right now.</div>
+        </div>
+        <button class="btn-secondary" style="width:auto;height:36px;padding:0 16px;white-space:nowrap;" onclick="openOrgTree()">🌳 Company overview</button>
+      </div>
+      <div id="team-list"></div>
+    </div>
+
+    <div class="card" id="card-add-manager" style="display:none;">
+      <div class="card-title">Add a manager</div>
+      <div class="card-sub">Creates a real login for someone in the org chart. They'll sign in with a temporary password and be required to set their own on first login — same as below.</div>
+      <div class="err" id="err-addmgr"></div>
+      <div class="success" id="ok-addmgr"></div>
+      <div class="field"><label>Employee</label><select id="addmgr-employee"></select></div>
+      <div class="field"><label>Company email</label><input type="email" id="addmgr-email"></div>
+      <div class="field-check"><input type="checkbox" id="addmgr-comp"><label style="text-transform:none;font-weight:500;letter-spacing:0;font-size:13px;">Compensation access (can see raise/pay data for their team — same access as you)</label></div>
+      <div class="field"><label>Temporary password (tell them this — they'll be forced to change it immediately)</label><input type="text" id="addmgr-temppass" placeholder="e.g. a short phrase or random string"></div>
+      <button class="btn btn-primary" id="btn-addmgr" onclick="addManager()">Create account</button>
+
+      <div style="margin-top:1.5rem;padding-top:1.25rem;border-top:1px solid var(--gray-200);">
+        <div style="font-size:12px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Existing manager accounts</div>
+        <div id="manager-accounts-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP: COMPANY OVERVIEW — ORG TREE, COLOR-CODED -->
+  <div class="step" id="step-orgtree">
+    <button class="btn-secondary" style="width:auto;height:36px;padding:0 16px;margin-bottom:1rem;" onclick="showStep('step-home')">← Back to your team</button>
+    <div class="card">
+      <div class="card-title">Company overview</div>
+      <div class="card-sub">Your whole reporting chain as a tree, colored by how tags are trending so far this year. This is a rough signal, not an official performance band — those come from year-end review, which isn't built yet.</div>
+      <div style="display:flex;gap:14px;margin-bottom:1rem;font-size:12px;color:var(--gray-500);">
+        <span><span class="org-dot green" style="display:inline-block;"></span> Trending positive</span>
+        <span><span class="org-dot amber" style="display:inline-block;"></span> Neutral so far</span>
+        <span><span class="org-dot red" style="display:inline-block;"></span> Trending negative</span>
+        <span><span class="org-dot gray" style="display:inline-block;"></span> No data yet</span>
+      </div>
+      <div id="org-tree-container"></div>
+    </div>
+  </div>
+
+  <!-- STEP: ONE EMPLOYEE'S CHECK-INS -->
+  <div class="step" id="step-employee">
+    <button class="btn-secondary" style="width:auto;height:36px;padding:0 16px;margin-bottom:1rem;" onclick="showStep('step-home')">← Back to your team</button>
+    <div class="card">
+      <div class="card-title" id="emp-detail-name"></div>
+      <div id="band-status" style="margin-bottom:1rem;"></div>
+      <div class="card-sub">Tag totals build up here as check-ins are finalized.</div>
+      <div id="tag-summary"></div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="font-size:15px;">Check-ins</div>
+      <div style="display:flex;gap:10px;margin-bottom:1rem;">
+        <button class="btn btn-primary" style="flex:1;" onclick="openNewCheckin('quarterly')">New quarterly review</button>
+        <button class="btn btn-secondary" style="flex:1;" onclick="openNewCheckin('anytime')">New check-in</button>
+      </div>
+      <div id="checkin-list"></div>
+    </div>
+  </div>
+
+  <!-- STEP: NEW / VIEW CHECK-IN -->
+  <div class="step" id="step-checkin">
+    <button class="btn-secondary" style="width:auto;height:36px;padding:0 16px;margin-bottom:1rem;" onclick="closeCheckinView()">← Back</button>
+    <div class="checkin-layout">
+      <div class="card role-snapshot-card">
+        <div class="card-title" style="font-size:15px;">Role expectations</div>
+        <div class="card-sub" style="margin-bottom:1rem;">What to look for, so the conversation stays the same regardless of who's running it.</div>
+        <div id="role-snapshot"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" id="checkin-title">New check-in</div>
+        <div class="err" id="err-checkin"></div>
+
+        <div id="checkin-form-fields">
+          <div class="field"><label>Date the event happened</label><input type="date" id="ci-event-date"></div>
+          <div class="field"><label>What happened</label><textarea class="tall" id="ci-what" placeholder="Specific, factual — include dates and details. Written as if the employee will read it, because they will."></textarea></div>
+          <div class="field"><label>Impact</label><textarea id="ci-impact" placeholder="What did this affect — a customer, a deadline, a coworker, a metric?"></textarea></div>
+          <div class="field"><label>Expectation going forward</label><textarea id="ci-expectation"></textarea></div>
+          <div class="field"><label>By when</label><input type="date" id="ci-bywhen"></div>
+
+          <div class="field">
+            <label>Key outcomes <span style="font-weight:400;color:var(--gray-400);font-size:11px;text-transform:none;letter-spacing:0;">(optional — tag any you have evidence for; feeds the year-end summary)</span></label>
+            <div id="outcome-picker"></div>
+          </div>
+
+          <div class="field">
+            <label>Baseline expectations <span style="font-weight:400;color:var(--gray-400);font-size:11px;text-transform:none;letter-spacing:0;">(optional — same idea, for the standing expectations that apply to everyone)</span></label>
+            <div id="baseline-picker"></div>
+          </div>
+
+          <div class="field">
+            <label>Tags <span style="font-weight:400;color:var(--gray-400);font-size:11px;text-transform:none;letter-spacing:0;">(optional — pick any that apply; each needs its own note)</span></label>
+            <div id="tag-picker" style="max-height:320px;overflow-y:auto;border:1.5px solid var(--gray-300);border-radius:var(--radius);padding:8px 10px;"></div>
+          </div>
+
+          <div class="field">
+            <label>Action items <span style="font-weight:400;color:var(--gray-400);font-size:11px;text-transform:none;letter-spacing:0;">(optional)</span></label>
+            <div id="action-item-list"></div>
+            <button class="btn-secondary" style="width:auto;height:32px;padding:0 12px;font-size:12px;margin-top:6px;" onclick="addActionItemRow()">+ Add action item</button>
+          </div>
+
+          <button class="btn btn-secondary" id="btn-save-draft" onclick="saveCheckinDraft()">Save as draft</button>
+          <button class="btn btn-primary" id="btn-finalize" style="margin-top:8px;" onclick="finalizeCheckin()">Finalize — locks the record, cannot be edited after</button>
+        </div>
+
+        <div id="checkin-readonly-view" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const db = supabase.createClient(RMS_CONFIG.supabase_url, RMS_CONFIG.supabase_anon_key);
+document.getElementById('company-badge').textContent = RMS_CONFIG.company_short || 'RMS';
+
+let currentAccount = null; // review_accounts row for whoever is logged in
+let currentEmployee = null; // their own employees row
+let allEmployeesCache = [];
+
+function showStep(id){
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  // Login/password screens stay a comfortable narrow width; the actual
+  // working screens (team list, check-ins) get the full wide layout so
+  // the grid below can actually spread out instead of wasting the sides.
+  document.getElementById('page-wrap').classList.toggle('wide', id==='step-home'||id==='step-employee'||id==='step-checkin'||id==='step-orgtree');
+}
+
+// ── LOGIN ──────────────────────────────────
+async function doLogin(){
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('err-login');
+  errEl.classList.remove('show');
+  if(!email || !password){errEl.textContent='Enter your email and password.';errEl.classList.add('show');return;}
+  const btn = document.getElementById('btn-login');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Signing in...';
+  try{
+    const{error} = await db.auth.signInWithPassword({email, password});
+    if(error) throw error;
+    await afterLogin();
+  }catch(e){
+    errEl.textContent = 'Incorrect email or password.';
+    errEl.classList.add('show');
+  }finally{
+    btn.disabled = false; btn.textContent = 'Sign in';
+  }
+}
+
+async function afterLogin(){
+  const{data:{user}} = await db.auth.getUser();
+  if(!user)return;
+  const{data:account, error} = await db.from('review_accounts').select('*').eq('id', user.id).single();
+  if(error || !account){
+    document.getElementById('err-login').textContent = 'Your login worked, but no review account is set up for you yet — ask the VP to add you.';
+    document.getElementById('err-login').classList.add('show');
+    await db.auth.signOut();
+    return;
+  }
+  currentAccount = account;
+  document.getElementById('logout-link').style.display = 'inline';
+  if(account.must_change_password){
+    showStep('step-setpassword');
+    return;
+  }
+  await loadHome();
+}
+
+function doLogout(){
+  db.auth.signOut();
+  currentAccount = null; currentEmployee = null;
+  document.getElementById('logout-link').style.display = 'none';
+  document.getElementById('login-email').value=''; document.getElementById('login-password').value='';
+  showStep('step-login');
+}
+
+// ── FORCED FIRST-TIME PASSWORD CHANGE ─────
+async function setNewPassword(){
+  const p1 = document.getElementById('newpass-1').value;
+  const p2 = document.getElementById('newpass-2').value;
+  const errEl = document.getElementById('err-setpassword');
+  errEl.classList.remove('show');
+  if(p1.length < 8){errEl.textContent='Use at least 8 characters.';errEl.classList.add('show');return;}
+  if(p1 !== p2){errEl.textContent="Passwords don't match.";errEl.classList.add('show');return;}
+  const btn = document.getElementById('btn-setpassword');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Saving...';
+  try{
+    const{error:e1} = await db.auth.updateUser({password: p1});
+    if(e1) throw e1;
+    const{error:e2} = await db.from('review_accounts').update({must_change_password:false}).eq('id', currentAccount.id);
+    if(e2) throw e2;
+    currentAccount.must_change_password = false;
+    await loadHome();
+  }catch(e){
+    errEl.textContent = 'Error saving: ' + e.message;
+    errEl.classList.add('show');
+  }finally{
+    btn.disabled = false; btn.textContent = 'Save my password →';
+  }
+}
+
+// ── HOME: YOUR TEAM ────────────────────────
+// Walks the org chart client-side (employee_managers, a many-to-many
+// table — someone can have more than one manager) to find everyone
+// below the logged-in manager. Mirrors the same logic the database's
+// rms_reports_up_to function uses for RLS; RLS is still the real
+// enforcement, this is only what gets shown. Tracks depth (1 = reports
+// directly to you) and, for anyone deeper, the name of the immediate
+// manager they're found under — if more than one chain reaches someone,
+// this shows whichever path is found first, not every possible path.
+function findAllReports(managerId, edges, employeesById, depth, seen, viaName){
+  depth = depth || 1;
+  seen = seen || new Set();
+  const direct = edges.filter(em=>em.manager_id===managerId).map(em=>em.employee_id);
+  let all = [];
+  direct.forEach(empId=>{
+    if(seen.has(empId))return; // already counted — avoids double-listing or looping on an unusual reporting graph
+    seen.add(empId);
+    const emp = employeesById[empId];
+    if(emp)all.push({...emp, depth, via: depth===1?null:viaName});
+    all = all.concat(findAllReports(empId, edges, employeesById, depth+1, seen, emp?.name));
+  });
+  return all;
+}
+
+function currentQuarterString(){
+  const d=new Date();
+  return `${d.getFullYear()}-Q${Math.floor(d.getMonth()/3)+1}`;
+}
+function daysAgoText(ts){
+  const days=Math.floor((Date.now()-new Date(ts).getTime())/86400000);
+  if(days<=0)return 'today';
+  if(days===1)return '1 day ago';
+  return days+' days ago';
+}
+
+async function loadHome(){
+  const{data:employees} = await db.from('employees').select('id,name,role_id,terminated').eq('terminated', false);
+  const{data:edges} = await db.from('employee_managers').select('employee_id,manager_id');
+  allEmployeesCache = employees || [];
+  const employeesById = {}; allEmployeesCache.forEach(e=>employeesById[e.id]=e);
+  currentEmployee = allEmployeesCache.find(e=>e.id===currentAccount.employee_id);
+  document.getElementById('home-greeting').textContent = currentEmployee ? `Your team, ${currentEmployee.name.split(' ')[0]}` : 'Your team';
+
+  const reports = currentEmployee ? findAllReports(currentEmployee.id, edges||[], employeesById) : [];
+  // Direct reports first, then everyone else grouped under one label,
+  // alphabetical within each group — so the shape of your team reads
+  // top-down instead of being a flat, unsorted list.
+  reports.sort((a,b)=>(a.depth-b.depth)||a.name.localeCompare(b.name));
+  const direct = reports.filter(e=>e.depth===1);
+  const indirect = reports.filter(e=>e.depth>1);
+
+  // Pull every check-in for this whole team in one query — RLS already
+  // scopes it to exactly what you're allowed to see (your own drafts,
+  // anything finalized+ for anyone in your chain) — and turn it into a
+  // small status per person, so the landing page shows something real
+  // instead of a bare list of names.
+  const reportIds = reports.map(e=>e.id);
+  const quarterStr = currentQuarterString();
+  const statsByEmp = {};
+  reportIds.forEach(id=>{statsByEmp[id]={draftCount:0,lastFinalizedAt:null,awaitingDiscussion:0,quarterlyDone:false};});
+  if(reportIds.length){
+    const{data:teamCheckins} = await db.from('checkins').select('id,employee_id,state,type,quarter,finalized_at,created_by,voided').in('employee_id', reportIds);
+    (teamCheckins||[]).forEach(c=>{
+      if(c.voided)return;
+      const s=statsByEmp[c.employee_id];
+      if(!s)return;
+      if(c.state==='draft'){
+        if(c.created_by===currentAccount.id)s.draftCount++;
+      } else {
+        if(c.finalized_at&&(!s.lastFinalizedAt||c.finalized_at>s.lastFinalizedAt))s.lastFinalizedAt=c.finalized_at;
+        if(c.state==='finalized')s.awaitingDiscussion++;
+        if(c.type==='quarterly'&&c.quarter===quarterStr)s.quarterlyDone=true;
+      }
+    });
+  }
+
+  // Overview strip — team-wide numbers at a glance, no clicking needed.
+  // The quarterly count is scoped to DIRECT reports only — that's the
+  // one that's actually your job. Indirect reports' status still shows
+  // on their own card further down, since you can see it and can step
+  // in if needed, but it isn't folded into "your" completion number —
+  // their own direct manager owns getting that one done.
+  const totalDrafts=Object.values(statsByEmp).reduce((n,s)=>n+s.draftCount,0);
+  const totalAwaiting=Object.values(statsByEmp).reduce((n,s)=>n+s.awaitingDiscussion,0);
+  const directQuarterlyDone=direct.filter(e=>statsByEmp[e.id]?.quarterlyDone).length;
+  const mostRecent=Object.values(statsByEmp).map(s=>s.lastFinalizedAt).filter(Boolean).sort().reverse()[0];
+  document.getElementById('overview-strip').innerHTML = reports.length ? `
+    <div class="overview-card ${totalDrafts>0?'warn':''}"><div class="overview-val">${totalDrafts}</div><div class="overview-lbl">Draft${totalDrafts===1?'':'s'} in progress</div></div>
+    <div class="overview-card ${totalAwaiting>0?'warn':'good'}"><div class="overview-val">${totalAwaiting}</div><div class="overview-lbl">Awaiting discussion</div></div>
+    <div class="overview-card ${directQuarterlyDone<direct.length?'warn':'good'}"><div class="overview-val">${directQuarterlyDone}/${direct.length}</div><div class="overview-lbl">Your ${quarterStr} check-ins done</div></div>
+    <div class="overview-card"><div class="overview-val">${mostRecent?daysAgoText(mostRecent):'—'}</div><div class="overview-lbl">Since your last check-in</div></div>
+  ` : '';
+
+  const listEl = document.getElementById('team-list');
+  if(!reports.length){
+    listEl.innerHTML = '<div class="empty">Nobody reports to you yet in the org chart. Ask the VP to set it up in the Employees tab.</div>';
+  } else {
+    // isDirect controls the badge's wording only — an indirect report's
+    // quarterly status is still shown (you can see it and can submit
+    // one yourself if you ever need to), it's just labeled as their own
+    // manager's responsibility rather than yours.
+    const renderBadges=(e,isDirect)=>{
+      const s=statsByEmp[e.id]||{};
+      let b='';
+      if(s.draftCount>0)b+=`<span class="pbadge draft">✎ Draft</span>`;
+      if(s.awaitingDiscussion>0)b+=`<span class="pbadge discuss">🗣 Needs discussion</span>`;
+      if(s.quarterlyDone){
+        b+=`<span class="pbadge qdone">✓ ${quarterStr}</span>`;
+      } else {
+        b+= isDirect ? `<span class="pbadge qmissing">⚠ ${quarterStr} not done</span>` : `<span class="pbadge qmissing">⚠ ${quarterStr} not done (their manager's)</span>`;
+      }
+      const lastLine=s.lastFinalizedAt?`<div style="font-size:10.5px;color:var(--gray-400);margin-top:2px;">Last check-in: ${daysAgoText(s.lastFinalizedAt)}</div>`:`<div style="font-size:10.5px;color:var(--gray-400);margin-top:2px;">No check-ins yet</div>`;
+      return `<div class="person-badges">${b}</div>${lastLine}`;
+    };
+    let html = '';
+    if(direct.length){
+      html += `<div class="team-section-label">Reports directly to you (${direct.length})</div>`;
+      html += `<div class="team-grid">` + direct.map(e=>`<div class="team-card" onclick="openEmployee('${e.id}')"><div class="team-card-top"><div class="team-name">${e.name}</div><span class="team-badge direct">Direct</span></div>${renderBadges(e,true)}</div>`).join('') + `</div>`;
+    }
+    if(indirect.length){
+      html += `<div class="team-section-label">Elsewhere in your chain (${indirect.length})</div>`;
+      // Grouped by whichever direct report leads to them, rather than one
+      // flat alphabetical list — mirrors the actual shape of your org
+      // chart, so it reads as "who's under who" instead of a name soup.
+      const groups = {};
+      indirect.forEach(e=>{ (groups[e.via]=groups[e.via]||[]).push(e); });
+      const viaNames = Object.keys(groups).sort((a,b)=>a.localeCompare(b));
+      viaNames.forEach(via=>{
+        groups[via].sort((a,b)=>(a.depth-b.depth)||a.name.localeCompare(b.name));
+        html += `<div class="team-subgroup-label">Under ${via}</div>`;
+        html += `<div class="team-grid">` + groups[via].map(e=>`<div class="team-card indirect" onclick="openEmployee('${e.id}')"><div class="team-name">${e.name}</div>${renderBadges(e,false)}</div>`).join('') + `</div>`;
+      });
+    }
+    listEl.innerHTML = html;
+  }
+
+  if(currentAccount.comp_access){
+    document.getElementById('card-add-manager').style.display = 'block';
+    populateEmployeeDropdown();
+    loadManagerAccountsList();
+  }
+  showStep('step-home');
+}
+
+function populateEmployeeDropdown(){
+  const sel = document.getElementById('addmgr-employee');
+  sel.innerHTML = allEmployeesCache.map(e=>`<option value="${e.id}">${e.name}</option>`).join('');
+}
+
+async function loadManagerAccountsList(){
+  const{data} = await db.from('review_accounts').select('employee_id,comp_access,active').eq('active', true);
+  const listEl = document.getElementById('manager-accounts-list');
+  if(!data || !data.length){listEl.innerHTML = '<div class="empty">No manager accounts yet.</div>';return;}
+  listEl.innerHTML = data.map(a=>{
+    const emp = allEmployeesCache.find(e=>e.id===a.employee_id);
+    return `<div class="manager-list-row"><span>${emp?.name||a.employee_id}</span>${a.comp_access?'<span class="badge badge-comp">Comp access</span>':''}</div>`;
+  }).join('');
+}
+
+// ── ADD A MANAGER (calls the Edge Function — never the service role
+// key directly; that key never leaves Supabase's servers) ──────────
+async function addManager(){
+  const employee_id = document.getElementById('addmgr-employee').value;
+  const email = document.getElementById('addmgr-email').value.trim();
+  const comp_access = document.getElementById('addmgr-comp').checked;
+  const temp_password = document.getElementById('addmgr-temppass').value;
+  const errEl = document.getElementById('err-addmgr');
+  const okEl = document.getElementById('ok-addmgr');
+  errEl.classList.remove('show'); okEl.classList.remove('show');
+  if(!employee_id || !email || !temp_password){errEl.textContent='Employee, email, and a temporary password are all required.';errEl.classList.add('show');return;}
+  const btn = document.getElementById('btn-addmgr');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Creating...';
+  try{
+    const{data:{session}} = await db.auth.getSession();
+    const resp = await fetch(`${RMS_CONFIG.supabase_url}/functions/v1/create-manager-account`, {
+      method: 'POST',
+      headers: {'Content-Type':'application/json', 'Authorization': `Bearer ${session.access_token}`},
+      body: JSON.stringify({email, employee_id, comp_access, temp_password}),
+    });
+    const result = await resp.json();
+    if(!result.ok) throw new Error(result.error||'Unknown error');
+    okEl.textContent = `Account created for ${email}. Give them their email + the temporary password — they'll be forced to set their own on first login.`;
+    okEl.classList.add('show');
+    document.getElementById('addmgr-email').value='';
+    document.getElementById('addmgr-temppass').value='';
+    document.getElementById('addmgr-comp').checked=false;
+    loadManagerAccountsList();
+  }catch(e){
+    errEl.textContent = 'Error: ' + e.message;
+    errEl.classList.add('show');
+  }finally{
+    btn.disabled = false; btn.textContent = 'Create account';
+  }
+}
+
+// ── ANYTIME CHECK-INS ──────────────────────────────────────────
+let viewingEmployee = null;   // the employees row currently being reviewed
+let viewingCheckinId = null;  // null while composing a brand-new one
+let activeCheckinType = 'anytime'; // set by whichever button opened the form; preserved when re-opening an existing draft
+let allTagsCache = [];
+let allBaselinesCache = [];
+let allOutcomesCache = [];
+let baselineAssessments = {}; // baseline_id -> {met: true|false|null, note}
+let outcomeAssessments = {}; // outcome_id -> {met: true|false|null}
+let allRolesCache = [];
+let actionItemRows = [];      // [{description, due_date}] for the form in progress
+
+// ── COMPANY OVERVIEW: ORG TREE ─────────────────────────────────
+async function openOrgTree(){
+  showStep('step-orgtree');
+  const box=document.getElementById('org-tree-container');
+  box.innerHTML='<div class="empty">Loading…</div>';
+
+  const{data:employees} = await db.from('employees').select('id,name,role_id,terminated').eq('terminated', false);
+  const{data:edges} = await db.from('employee_managers').select('employee_id,manager_id');
+  const employeesById={}; (employees||[]).forEach(e=>employeesById[e.id]=e);
+  if(!allRolesCache.length){
+    const{data} = await db.from('roles').select('id,is_leadership,current_version_id');
+    allRolesCache = data || [];
+  }
+  const roleNameById={};
+  const{data:roleRows} = await db.from('roles').select('id,name');
+  (roleRows||[]).forEach(r=>roleNameById[r.id]=r.name);
+
+  // Everyone in the visible chain, plus the viewer themselves as the root.
+  const chain = findAllReports(currentEmployee.id, edges||[], employeesById);
+  const allIds = [currentEmployee.id, ...chain.map(e=>e.id)];
+
+  // One bulk query for tag signal across everyone at once, rather than
+  // one query per person.
+  const{data:allCheckins} = await db.from('checkins').select('id,employee_id').in('employee_id',allIds).neq('state','draft').eq('voided',false);
+  const checkinIdsByEmp={}; (allCheckins||[]).forEach(c=>{(checkinIdsByEmp[c.employee_id]=checkinIdsByEmp[c.employee_id]||[]).push(c.id);});
+  const allCheckinIds=(allCheckins||[]).map(c=>c.id);
+  let tagsByCheckin={};
+  if(allCheckinIds.length){
+    const{data:allTags} = await db.from('checkin_tags').select('checkin_id,points_at_finalization').in('checkin_id',allCheckinIds);
+    (allTags||[]).forEach(t=>{(tagsByCheckin[t.checkin_id]=tagsByCheckin[t.checkin_id]||[]).push(t.points_at_finalization||0);});
+  }
+  const signalByEmp={};
+  allIds.forEach(id=>{
+    const cIds=checkinIdsByEmp[id]||[];
+    if(!cIds.length){signalByEmp[id]={color:'gray',label:'No data',net:0};return;}
+    const net=cIds.reduce((n,cid)=>n+(tagsByCheckin[cid]||[]).reduce((a,b)=>a+b,0),0);
+    const color=net>=2?'green':net<=-2?'red':'amber';
+    signalByEmp[id]={color,label:(net>=0?'+':'')+net+' pts',net};
+  });
+
+  function buildTree(rootId, seen){
+    seen=seen||new Set([rootId]);
+    const childIds=(edges||[]).filter(e=>e.manager_id===rootId).map(e=>e.employee_id).filter(id=>!seen.has(id)&&employeesById[id]);
+    childIds.forEach(id=>seen.add(id));
+    return childIds.map(id=>({id, name:employeesById[id].name, roleName:roleNameById[employeesById[id].role_id]||null, children:buildTree(id,seen)}))
+      .sort((a,b)=>a.name.localeCompare(b.name));
+  }
+  const tree = buildTree(currentEmployee.id);
+
+  function renderNode(node){
+    const sig=signalByEmp[node.id]||{color:'gray',label:'No data'};
+    const hasKids=node.children.length>0;
+    return `<div class="org-tree-node">
+      <div class="org-tree-row" onclick="openEmployee('${node.id}')">
+        <span class="org-dot ${sig.color}"></span>
+        <span class="org-name">${node.name}</span>
+        ${node.roleName?`<span class="org-role">${node.roleName}</span>`:''}
+        <span class="org-signal ${sig.color}">${sig.label}</span>
+      </div>
+      ${hasKids?`<div class="org-tree-children">${node.children.map(renderNode).join('')}</div>`:''}
+    </div>`;
+  }
+
+  const rootSig=signalByEmp[currentEmployee.id]||{color:'gray',label:'No data'};
+  box.innerHTML = `
+    <div class="org-tree-row" style="background:var(--steel-bg);margin-bottom:6px;">
+      <span class="org-dot ${rootSig.color}"></span>
+      <span class="org-name">${currentEmployee.name} (you)</span>
+      <span class="org-signal ${rootSig.color}">${rootSig.label}</span>
+    </div>
+    <div class="org-tree-children">${tree.map(renderNode).join('') || '<div class="empty">Nobody reports to you yet.</div>'}</div>
+  `;
+}
+
+async function openEmployee(employeeId){
+  viewingEmployee = allEmployeesCache.find(e=>e.id===employeeId);
+  if(!viewingEmployee)return;
+  if(!allRolesCache.length){
+    const{data} = await db.from('roles').select('id,is_leadership,current_version_id');
+    allRolesCache = data || [];
+  }
+  const role = allRolesCache.find(r=>r.id===viewingEmployee.role_id);
+  viewingEmployee.role_is_leadership = !!role?.is_leadership;
+  viewingEmployee.role_current_version_id = role?.current_version_id || null;
+  document.getElementById('emp-detail-name').textContent = viewingEmployee.name;
+  showStep('step-employee');
+  await loadCheckinList();
+  await loadTagSummary(employeeId);
+  await loadPerformanceBand(employeeId);
+}
+
+// Live tag accumulation for this person — sums every tag's locked-in
+// point value from every finalized (non-voided) check-in. This is real
+// and available today, even though the year-end band screen (which
+// will turn these same totals into a formal band recommendation) is
+// separate, later work.
+// Performance band — the real, official one only ever comes from a
+// year-end review (not built yet, so this is honest about that rather
+// than showing nothing or making one up). Once check-ins exist, an
+// interim tag-based signal is shown alongside it, clearly labeled as
+// a rough read on tags so far, not an actual band.
+async function loadPerformanceBand(employeeId){
+  const box=document.getElementById('band-status');
+  const year=new Date().getFullYear();
+  const{data:yr} = await db.from('yearend_reviews').select('*').eq('employee_id',employeeId).eq('year',year).maybeSingle();
+  if(yr){
+    const band=yr.manager_band||yr.system_band;
+    box.innerHTML=`<span class="badge" style="background:var(--navy);color:white;">Performance band (${year}): ${band||'set, no label'}</span>`;
+    return;
+  }
+  const{data:cks} = await db.from('checkins').select('id').eq('employee_id',employeeId).neq('state','draft').eq('voided',false);
+  const ids=(cks||[]).map(c=>c.id);
+  if(!ids.length){
+    box.innerHTML=`<span class="badge" style="background:var(--gray-100);color:var(--gray-500);border:1px solid var(--gray-200);">No performance band set yet — no check-ins finalized</span>`;
+    return;
+  }
+  const{data:cts} = await db.from('checkin_tags').select('points_at_finalization').in('checkin_id',ids);
+  const net=(cts||[]).reduce((n,r)=>n+(r.points_at_finalization||0),0);
+  const proxyColor = net>=2?'good':net<=-2?'warn':'';
+  const proxyLabel = net>=2?'Trending positive':net<=-2?'Trending negative':'Neutral so far';
+  box.innerHTML=`<span class="badge" style="background:var(--gray-100);color:var(--gray-500);border:1px solid var(--gray-200);">No official band yet — calculated at year-end review</span>
+    <span class="overview-card ${proxyColor}" style="display:inline-block;margin-left:8px;padding:4px 10px;font-size:11px;border-radius:20px;border-left-width:3px;">${proxyLabel} (${net>=0?'+':''}${net} pts so far — not an official band)</span>`;
+}
+
+async function loadTagSummary(employeeId){
+  const box=document.getElementById('tag-summary');
+  const{data:cks} = await db.from('checkins').select('id').eq('employee_id',employeeId).neq('state','draft').eq('voided',false);
+  const ids=(cks||[]).map(c=>c.id);
+  if(!ids.length){box.innerHTML='<div class="empty">No finalized check-ins yet — tag totals will build up here as they happen.</div>';return;}
+  const{data:cts} = await db.from('checkin_tags').select('points_at_finalization,tags(name)').in('checkin_id',ids);
+  const rows=cts||[];
+  if(!rows.length){box.innerHTML='<div class="empty">No tags logged yet.</div>';return;}
+  const totalPoints=rows.reduce((n,r)=>n+(r.points_at_finalization||0),0);
+  const posCount=rows.filter(r=>(r.points_at_finalization||0)>0).length;
+  const negCount=rows.filter(r=>(r.points_at_finalization||0)<0).length;
+  const byTag={};
+  rows.forEach(r=>{const name=r.tags?.name||'Unknown'; byTag[name]=(byTag[name]||0)+1;});
+  const topTags=Object.entries(byTag).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  box.innerHTML=`
+    <div class="person-badges">
+      <span class="pbadge ${totalPoints>=0?'qdone':'qmissing'}" style="font-size:11.5px;">${totalPoints>=0?'+':''}${totalPoints} total points</span>
+      <span class="pbadge draft" style="font-size:11.5px;">${posCount} positive</span>
+      <span class="pbadge discuss" style="font-size:11.5px;">${negCount} negative / coaching</span>
+    </div>
+    ${topTags.length?`<div style="font-size:12px;color:var(--gray-500);margin-top:8px;">Most logged: ${topTags.map(([n,c])=>`${n} (${c})`).join(', ')}</div>`:''}
+  `;
+}
+
+async function loadCheckinList(){
+  const{data,error} = await db.from('checkins').select('*').eq('employee_id', viewingEmployee.id).order('event_date',{ascending:false});
+  const listEl = document.getElementById('checkin-list');
+  if(error){listEl.innerHTML = '<div class="empty">Error loading check-ins: '+error.message+'</div>';return;}
+  if(!data || !data.length){listEl.innerHTML = '<div class="empty">No check-ins yet for this person.</div>';return;}
+  const stateLabel = {draft:'Draft',finalized:'Finalized — not yet discussed',discussed:'Discussed',acknowledged:'Acknowledged'};
+  const stateColor = {draft:'var(--gray-400)',finalized:'var(--amber)',discussed:'var(--green)',acknowledged:'var(--green)'};
+  listEl.innerHTML = data.map(c=>`
+    <div class="team-row" style="cursor:pointer;" onclick="openCheckinView('${c.id}')">
+      <div><div class="team-name">${new Date(c.event_date+'T12:00:00').toLocaleDateString()}</div><div style="font-size:11px;color:${c.voided?'var(--red)':stateColor[c.state]};font-weight:600;">${c.voided?'VOIDED':stateLabel[c.state]}</div></div>
+      <span class="badge" style="background:var(--steel-bg);color:var(--navy);border:1px solid var(--steel);">${c.type}</span>
+    </div>`).join('');
+}
+
+function openNewCheckin(type){
+  viewingCheckinId = null;
+  activeCheckinType = type;
+  document.getElementById('checkin-title').textContent = (type==='quarterly'?'New quarterly review — ':'New check-in — ') + viewingEmployee.name;
+  document.getElementById('checkin-form-fields').style.display = 'block';
+  document.getElementById('checkin-readonly-view').style.display = 'none';
+  document.getElementById('err-checkin').classList.remove('show');
+  document.getElementById('ci-event-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('ci-what').value = '';
+  document.getElementById('ci-impact').value = '';
+  document.getElementById('ci-expectation').value = '';
+  document.getElementById('ci-bywhen').value = '';
+  actionItemRows = [];
+  renderActionItemRows();
+  baselineAssessments = {};
+  outcomeAssessments = {};
+  populateRoleSnapshot();
+  populateAssessmentPickers();
+  populateTagPicker();
+  document.getElementById('btn-save-draft').style.display='inline-block';
+  document.getElementById('btn-finalize').style.display='inline-block';
+  showStep('step-checkin');
+}
+
+function closeCheckinView(){
+  showStep('step-employee');
+  loadCheckinList();
+}
+
+// Tags shown are always company-wide (everyone), plus leadership tags
+// only if this employee's role is a leadership role, plus this specific
+// role's own tags — never another role's tags mixed in.
+// Lightweight met/not-met tagging for baseline expectations and key
+// outcomes — usable on any check-in, not only a full quarterly score.
+// This is the structured data a future summary reads, not free text.
+// The "role expectations" reference panel — purpose, key outcomes, and
+// baselines, shown read-only alongside the form so the same reminder
+// is in front of every manager doing this, not something they have to
+// remember or go look up separately.
+async function populateRoleSnapshot(){
+  const box=document.getElementById('role-snapshot');
+  if(!viewingEmployee.role_current_version_id){
+    box.innerHTML='<div class="empty">No position set for this person yet — set one in the Employees tab to see their role card here.</div>';
+    return;
+  }
+  if(!allBaselinesCache.length){
+    const{data} = await db.from('role_baselines').select('*');
+    allBaselinesCache = data || [];
+  }
+  if(!allOutcomesCache.length){
+    const{data} = await db.from('role_outcomes').select('*');
+    allOutcomesCache = data || [];
+  }
+  const{data:rv} = await db.from('role_versions').select('purpose').eq('id',viewingEmployee.role_current_version_id).maybeSingle();
+  const outcomes = allOutcomesCache.filter(o=>o.role_version_id===viewingEmployee.role_current_version_id).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const companyBaselines = allBaselinesCache.filter(b=>b.scope==='company').sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const leadershipBaselines = viewingEmployee.role_is_leadership ? allBaselinesCache.filter(b=>b.scope==='leadership').sort((a,b)=>(a.sort_order||0)-(b.sort_order||0)) : [];
+  const roleBaselines = allBaselinesCache.filter(b=>b.scope==='role'&&b.role_version_id===viewingEmployee.role_current_version_id).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+
+  let html = rv?.purpose ? `<div class="rs-purpose">"${rv.purpose}"</div>` : '';
+  if(outcomes.length){
+    html += `<div class="rs-section-label">Key outcomes</div>`;
+    html += outcomes.map(o=>`<div class="rs-item"><strong>${o.name}</strong><div class="rs-sub">${o.measured_by||''}</div></div>`).join('');
+  }
+  html += `<div class="rs-section-label">Baseline expectations</div>`;
+  if(companyBaselines.length){
+    html += `<div class="rs-group-label">Company-wide</div>` + companyBaselines.map(b=>`<div class="rs-item">${b.text}</div>`).join('');
+  }
+  if(leadershipBaselines.length){
+    html += `<div class="rs-group-label">Leadership</div>` + leadershipBaselines.map(b=>`<div class="rs-item">${b.text}</div>`).join('');
+  }
+  if(roleBaselines.length){
+    html += `<div class="rs-group-label">Role-specific</div>` + roleBaselines.map(b=>`<div class="rs-item">${b.text}</div>`).join('');
+  }
+  box.innerHTML = html;
+}
+
+async function populateAssessmentPickers(){
+  if(!allBaselinesCache.length){
+    const{data} = await db.from('role_baselines').select('*');
+    allBaselinesCache = data || [];
+  }
+  if(!allOutcomesCache.length){
+    const{data} = await db.from('role_outcomes').select('*');
+    allOutcomesCache = data || [];
+  }
+  const relevantBaselines = allBaselinesCache.filter(b=>
+    b.scope==='company'
+    || (b.scope==='leadership' && viewingEmployee.role_is_leadership)
+    || (b.scope==='role' && b.role_version_id===viewingEmployee.role_current_version_id)
+  ).sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  const relevantOutcomes = allOutcomesCache.filter(o=>o.role_version_id===viewingEmployee.role_current_version_id)
+    .sort((a,b)=>(a.sort_order||0)-(b.sort_order||0));
+  renderAssessmentList('baseline-picker', relevantBaselines, 'baseline', b=>b.text);
+  renderAssessmentList('outcome-picker', relevantOutcomes, 'outcome', o=>o.name);
+}
+
+function renderAssessmentList(containerId, items, kind, textFn){
+  const box=document.getElementById(containerId);
+  if(!items.length){box.innerHTML='<div style="font-size:12px;color:var(--gray-400);">None set up for this role yet.</div>';return;}
+  const map = kind==='baseline' ? baselineAssessments : outcomeAssessments;
+  box.innerHTML = items.map(it=>{
+    const state = map[it.id]||{};
+    const met=state.met;
+    return `<div class="assess-row">
+      <div class="assess-text">${textFn(it)}</div>
+      <div class="assess-buttons">
+        <button type="button" class="assess-btn met ${met===true?'active':''}" onclick="setAssessment('${kind}','${it.id}',true)">✓ Met</button>
+        <button type="button" class="assess-btn notmet ${met===false?'active':''}" onclick="setAssessment('${kind}','${it.id}',false)">✕ Not met</button>
+      </div>
+    </div>
+    ${kind==='baseline'&&met===false?`<textarea class="assess-note" id="baseline-note-${it.id}" placeholder="Why not met — specifics">${state.note||''}</textarea>`:''}`;
+  }).join('');
+}
+
+// Captures whatever's currently typed in any visible "not met" note
+// before a re-render, so switching another row's status never wipes
+// out a note the manager was mid-typing.
+function captureAssessmentNotes(){
+  document.querySelectorAll('[id^="baseline-note-"]').forEach(el=>{
+    const id = el.id.replace('baseline-note-','');
+    if(baselineAssessments[id])baselineAssessments[id].note = el.value;
+  });
+}
+
+function setAssessment(kind, id, met){
+  captureAssessmentNotes();
+  const map = kind==='baseline' ? baselineAssessments : outcomeAssessments;
+  const wasSame = map[id] && map[id].met===met;
+  map[id] = {...(map[id]||{}), met: wasSame?null:met}; // clicking the active one again clears it
+  populateAssessmentPickers();
+}
+
+
+async function populateTagPicker(){
+  if(!allTagsCache.length){
+    const{data} = await db.from('tags').select('*').eq('active', true);
+    allTagsCache = data || [];
+  }
+  const relevant = allTagsCache.filter(t=>
+    t.tag_group==='company_positive' || t.tag_group==='company_negative'
+    || (t.tag_group==='leadership' && viewingEmployee.role_is_leadership)
+    || (t.tag_group==='role' && t.role_id===viewingEmployee.role_id)
+  );
+  const box = document.getElementById('tag-picker');
+  const groupLabel = {company_positive:'Company-wide — positive',role:'Role-specific',leadership:'Leadership',company_negative:'Company-wide — coaching / negative'};
+  const groups = {};
+  relevant.forEach(t=>{(groups[t.tag_group]=groups[t.tag_group]||[]).push(t);});
+  let html='';
+  ['company_positive','role','leadership','company_negative'].forEach(g=>{
+    if(!groups[g])return;
+    html+=`<div style="font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 4px;">${groupLabel[g]}</div>`;
+    groups[g].forEach(t=>{
+      html+=`<label style="display:flex;align-items:flex-start;gap:8px;padding:5px 2px;cursor:pointer;font-weight:400;text-transform:none;letter-spacing:0;font-size:13px;">
+        <input type="checkbox" value="${t.id}" style="width:auto;margin-top:2px;" onchange="toggleTagNote('${t.id}',this.checked)">
+        <span><strong style="color:${t.points>0?'var(--green)':t.points<0?'var(--red)':'var(--gray-500)'};">${t.points>0?'+':''}${t.points}</strong> ${t.name}${t.definition?`<div style="font-size:11px;color:var(--gray-400);">${t.definition}</div>`:''}</span>
+      </label>
+      <div id="tag-note-${t.id}" style="display:none;margin:4px 0 10px 26px;padding:10px;background:var(--gray-50);border-radius:8px;">
+        <div class="field" style="margin-bottom:6px;"><label style="font-size:10px;">What happened</label><textarea id="tagnote-what-${t.id}" style="min-height:50px;"></textarea></div>
+        <div class="field" style="margin-bottom:6px;"><label style="font-size:10px;">Impact</label><textarea id="tagnote-impact-${t.id}" style="min-height:40px;"></textarea></div>
+        <div class="field" style="margin-bottom:6px;"><label style="font-size:10px;">Expectation</label><textarea id="tagnote-expect-${t.id}" style="min-height:40px;"></textarea></div>
+        <div class="field" style="margin-bottom:0;"><label style="font-size:10px;">By when</label><input type="date" id="tagnote-byhen-${t.id}"></div>
+      </div>`;
+    });
+  });
+  box.innerHTML = html || '<div style="font-size:12px;color:var(--gray-400);">No tags available.</div>';
+}
+
+function toggleTagNote(tagId, checked){
+  const el = document.getElementById('tag-note-'+tagId);
+  if(el)el.style.display = checked ? 'block' : 'none';
+}
+
+function addActionItemRow(){
+  actionItemRows.push({description:'',due_date:''});
+  renderActionItemRows();
+}
+function removeActionItemRow(idx){
+  actionItemRows.splice(idx,1);
+  renderActionItemRows();
+}
+function renderActionItemRows(){
+  const el = document.getElementById('action-item-list');
+  el.innerHTML = actionItemRows.map((row,idx)=>`
+    <div style="display:flex;gap:6px;margin-bottom:6px;align-items:center;">
+      <input type="text" placeholder="Description" value="${row.description}" oninput="actionItemRows[${idx}].description=this.value" style="flex:1;border:1.5px solid var(--gray-300);border-radius:6px;padding:8px;">
+      <input type="date" value="${row.due_date}" oninput="actionItemRows[${idx}].due_date=this.value" style="border:1.5px solid var(--gray-300);border-radius:6px;padding:8px;">
+      <button class="btn-secondary" style="width:auto;height:32px;padding:0 10px;" onclick="removeActionItemRow(${idx})">✕</button>
+    </div>`).join('');
+}
+
+// Shared by Save Draft and Finalize — finalize additionally requires the
+// four structured-note fields, a note on every checked tag, and a
+// reason if the event is being logged more than 2 days late.
+async function persistCheckin(finalize){
+  captureAssessmentNotes();
+  const errEl = document.getElementById('err-checkin');
+  errEl.classList.remove('show');
+  const eventDate = document.getElementById('ci-event-date').value;
+  const what = document.getElementById('ci-what').value.trim();
+  const impact = document.getElementById('ci-impact').value.trim();
+  const expectation = document.getElementById('ci-expectation').value.trim();
+  const byWhen = document.getElementById('ci-bywhen').value;
+  if(!eventDate){errEl.textContent='Pick the date the event happened.';errEl.classList.add('show');return;}
+  if(finalize && (!what||!impact||!expectation||!byWhen)){
+    errEl.textContent='What happened, Impact, Expectation, and By when are all required to finalize.';
+    errEl.classList.add('show');return;
+  }
+
+  // Simple calendar-day approximation of the "logged within 2 business
+  // days" rule — good enough to prompt for a reason, not a full
+  // business-day calendar.
+  const today = new Date(); today.setHours(12,0,0,0);
+  const evtDate = new Date(eventDate+'T12:00:00');
+  const daysAgo = Math.round((today-evtDate)/86400000);
+  let lateReason = null;
+  if(daysAgo > 2){
+    lateReason = prompt(`This event happened ${daysAgo} days ago — more than the usual 2 business days. Why the delay?`);
+    if(finalize && (!lateReason || !lateReason.trim())){
+      errEl.textContent='A reason is required to finalize an entry logged this late.';
+      errEl.classList.add('show');return;
+    }
+  }
+
+  const checkedTagEls = [...document.querySelectorAll('#tag-picker input[type=checkbox]:checked')];
+  if(finalize){
+    for(const cb of checkedTagEls){
+      const w = document.getElementById('tagnote-what-'+cb.value).value.trim();
+      if(!w){errEl.textContent='Every checked tag needs its own note before finalizing.';errEl.classList.add('show');return;}
+    }
+  }
+
+  const checkinType = activeCheckinType;
+  const payload = {
+    employee_id: viewingEmployee.id,
+    manager_id: currentEmployee.id,
+    type: checkinType,
+    quarter: checkinType==='quarterly' ? currentQuarterString() : null,
+    event_date: eventDate,
+    late_reason: lateReason,
+    state: finalize ? 'finalized' : 'draft',
+    created_by: currentAccount.id,
+  };
+  if(finalize){
+    payload.finalized_at = new Date().toISOString();
+    payload.role_version_id = viewingEmployee.role_current_version_id;
+  }
+
+  try{
+    let checkinId = viewingCheckinId;
+    if(checkinId){
+      const{error} = await db.from('checkins').update(payload).eq('id',checkinId);
+      if(error)throw error;
+    } else {
+      const{data,error} = await db.from('checkins').insert(payload).select().single();
+      if(error)throw error;
+      checkinId = data.id;
+      viewingCheckinId = checkinId;
+    }
+
+    await db.from('checkin_notes').upsert({checkin_id:checkinId,what_happened:what,impact,expectation,by_when:byWhen||null});
+
+    // Replaced fresh on every save — safe while still a draft; a
+    // finalized record is never edited again through this form anyway.
+    await db.from('checkin_tags').delete().eq('checkin_id',checkinId);
+    for(const cb of checkedTagEls){
+      const tid = cb.value;
+      const tag = allTagsCache.find(t=>t.id===tid);
+      await db.from('checkin_tags').insert({
+        checkin_id:checkinId, tag_id:tid,
+        points_at_finalization: finalize ? tag.points : null,
+        what_happened: document.getElementById('tagnote-what-'+tid).value.trim(),
+        impact: document.getElementById('tagnote-impact-'+tid).value.trim(),
+        expectation: document.getElementById('tagnote-expect-'+tid).value.trim(),
+        by_when: document.getElementById('tagnote-byhen-'+tid).value || null,
+      });
+    }
+
+    await db.from('action_items').delete().eq('created_in_checkin_id',checkinId);
+    for(const row of actionItemRows){
+      if(!row.description.trim())continue;
+      await db.from('action_items').insert({
+        employee_id: viewingEmployee.id, created_in_checkin_id: checkinId,
+        description: row.description.trim(), owner_id: viewingEmployee.id,
+        due_date: row.due_date || null, status:'open',
+      });
+    }
+
+    // Baseline and outcome met/not-met tags — only rows the manager
+    // actually touched (met is not null/undefined) get saved.
+    await db.from('checkin_baseline_assessments').delete().eq('checkin_id',checkinId);
+    for(const[bid,state]of Object.entries(baselineAssessments)){
+      if(state.met===undefined||state.met===null)continue;
+      await db.from('checkin_baseline_assessments').insert({checkin_id:checkinId,baseline_id:bid,met:state.met,note:state.note||null});
+    }
+    await db.from('checkin_outcome_scores').delete().eq('checkin_id',checkinId);
+    for(const[oid,state]of Object.entries(outcomeAssessments)){
+      if(state.met===undefined||state.met===null)continue;
+      await db.from('checkin_outcome_scores').insert({checkin_id:checkinId,outcome_id:oid,met:state.met});
+    }
+
+    alert(finalize ? 'Check-in finalized — locked, corrections only via addendum from here.' : 'Draft saved.');
+    closeCheckinView();
+  }catch(e){
+    errEl.textContent = 'Error saving: '+e.message;
+    errEl.classList.add('show');
+  }
+}
+function saveCheckinDraft(){ persistCheckin(false); }
+function finalizeCheckin(){
+  if(!confirm('Finalizing locks this record — after this it can only be corrected with a timestamped addendum, never silently edited. Continue?'))return;
+  persistCheckin(true);
+}
+
+async function openCheckinView(id){
+  viewingCheckinId = id;
+  document.getElementById('err-checkin').classList.remove('show');
+  const{data:c,error} = await db.from('checkins').select('*').eq('id',id).single();
+  if(error){alert('Error loading check-in: '+error.message);return;}
+  const{data:note} = await db.from('checkin_notes').select('*').eq('checkin_id',id).maybeSingle();
+  const{data:cTags} = await db.from('checkin_tags').select('*, tags(name,points,definition)').eq('checkin_id',id);
+  const{data:items} = await db.from('action_items').select('*').eq('created_in_checkin_id',id);
+  const{data:addenda} = await db.from('addendums').select('*').eq('checkin_id',id).order('created_at');
+  const{data:cBaselines} = await db.from('checkin_baseline_assessments').select('*, role_baselines(text)').eq('checkin_id',id);
+  const{data:cOutcomes} = await db.from('checkin_outcome_scores').select('*, role_outcomes(name)').eq('checkin_id',id);
+
+  const isAuthorDraft = c.state==='draft' && c.created_by===currentAccount.id;
+  document.getElementById('checkin-title').textContent = `${viewingEmployee.name} — ${new Date(c.event_date+'T12:00:00').toLocaleDateString()}`;
+
+  if(isAuthorDraft){
+    document.getElementById('checkin-form-fields').style.display='block';
+    document.getElementById('checkin-readonly-view').style.display='none';
+    document.getElementById('btn-save-draft').style.display='inline-block';
+    document.getElementById('btn-finalize').style.display='inline-block';
+    document.getElementById('ci-event-date').value=c.event_date;
+    activeCheckinType = c.type||'anytime';
+    document.getElementById('ci-what').value=note?.what_happened||'';
+    document.getElementById('ci-impact').value=note?.impact||'';
+    document.getElementById('ci-expectation').value=note?.expectation||'';
+    document.getElementById('ci-bywhen').value=note?.by_when||'';
+    actionItemRows=(items||[]).map(i=>({description:i.description,due_date:i.due_date||''}));
+    renderActionItemRows();
+    baselineAssessments={};
+    (cBaselines||[]).forEach(b=>{baselineAssessments[b.baseline_id]={met:b.met,note:b.note||''};});
+    outcomeAssessments={};
+    (cOutcomes||[]).forEach(o=>{outcomeAssessments[o.outcome_id]={met:o.met};});
+    await populateRoleSnapshot();
+    await populateAssessmentPickers();
+    await populateTagPicker();
+    (cTags||[]).forEach(ct=>{
+      const cb=document.querySelector(`#tag-picker input[value="${ct.tag_id}"]`);
+      if(cb){
+        cb.checked=true;toggleTagNote(ct.tag_id,true);
+        document.getElementById('tagnote-what-'+ct.tag_id).value=ct.what_happened||'';
+        document.getElementById('tagnote-impact-'+ct.tag_id).value=ct.impact||'';
+        document.getElementById('tagnote-expect-'+ct.tag_id).value=ct.expectation||'';
+        document.getElementById('tagnote-byhen-'+ct.tag_id).value=ct.by_when||'';
+      }
+    });
+  } else {
+    document.getElementById('checkin-form-fields').style.display='none';
+    populateRoleSnapshot();
+    const roEl=document.getElementById('checkin-readonly-view');
+    roEl.style.display='block';
+    const stateLabel={draft:'Draft',finalized:'Finalized — awaiting discussion',discussed:'Discussed',acknowledged:'Acknowledged'};
+    let html=`<div style="margin-bottom:12px;"><span class="badge" style="background:var(--steel-bg);color:var(--navy);border:1px solid var(--steel);">${c.voided?'VOIDED':stateLabel[c.state]}</span> <span class="badge" style="background:var(--gray-100);color:var(--gray-500);border:1px solid var(--gray-200);">${c.type==='quarterly'?'Quarterly · '+c.quarter:'Anytime'}</span></div>`;
+    if(c.voided)html+=`<div class="err show">Voided — reason: ${c.voided_reason||''}</div>`;
+    html+=`<div class="field"><label>What happened</label><div>${note?.what_happened||'—'}</div></div>`;
+    html+=`<div class="field"><label>Impact</label><div>${note?.impact||'—'}</div></div>`;
+    html+=`<div class="field"><label>Expectation</label><div>${note?.expectation||'—'}</div></div>`;
+    html+=`<div class="field"><label>By when</label><div>${note?.by_when?new Date(note.by_when+'T12:00:00').toLocaleDateString():'—'}</div></div>`;
+    if(cOutcomes && cOutcomes.length){
+      html+=`<div class="field"><label>Key outcomes</label>`;
+      cOutcomes.forEach(o=>{html+=`<div style="font-size:13px;padding:3px 0;">${o.met?'✓':'✕'} <span style="color:${o.met?'var(--green)':'var(--red)'};font-weight:600;">${o.role_outcomes?.name||''}</span></div>`;});
+      html+='</div>';
+    }
+    if(cBaselines && cBaselines.length){
+      html+=`<div class="field"><label>Baseline expectations</label>`;
+      cBaselines.forEach(b=>{html+=`<div style="font-size:13px;padding:3px 0;">${b.met?'✓':'✕'} <span style="color:${b.met?'var(--green)':'var(--red)'};">${b.role_baselines?.text||''}</span>${!b.met&&b.note?`<div style="font-size:11.5px;color:var(--gray-500);margin-left:18px;">${b.note}</div>`:''}</div>`;});
+      html+='</div>';
+    }
+    if(cTags && cTags.length){
+      html+=`<div class="field"><label>Tags</label>`;
+      cTags.forEach(ct=>{
+        html+=`<div style="padding:8px;background:var(--gray-50);border-radius:8px;margin-bottom:6px;"><strong style="color:${ct.points_at_finalization>0?'var(--green)':ct.points_at_finalization<0?'var(--red)':'var(--gray-500)'};">${ct.points_at_finalization>0?'+':''}${ct.points_at_finalization??''} ${ct.tags?.name||''}</strong><div style="font-size:12px;margin-top:4px;">${ct.what_happened||''}</div></div>`;
+      });
+      html+='</div>';
+    }
+    if(items && items.length){
+      html+=`<div class="field"><label>Action items</label>`;
+      items.forEach(i=>{html+=`<div style="font-size:13px;padding:4px 0;">• ${i.description} ${i.due_date?'— due '+new Date(i.due_date+'T12:00:00').toLocaleDateString():''} <span style="color:var(--gray-400);">(${i.status})</span></div>`;});
+      html+='</div>';
+    }
+    if(addenda && addenda.length){
+      html+=`<div class="field"><label>Addendums</label>`;
+      addenda.forEach(a=>{html+=`<div style="font-size:12px;padding:6px 0;border-top:1px dashed var(--gray-200);">${a.text}<div style="color:var(--gray-400);">Reason: ${a.reason} — ${new Date(a.created_at).toLocaleString()}</div></div>`;});
+      html+='</div>';
+    }
+    if(c.state==='finalized' && !c.voided){
+      html+=`<button class="btn btn-primary" onclick="markDiscussed('${c.id}')">Mark discussed — the in-person conversation happened</button>`;
+    }
+    if(!c.voided && c.state!=='draft'){
+      html+=`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-200);">
+        <label style="display:block;font-size:11px;font-weight:700;color:var(--gray-500);text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Add an addendum</label>
+        <textarea id="addendum-text" placeholder="Correction or update text"></textarea>
+        <input type="text" id="addendum-reason" placeholder="Reason for this addendum" style="margin-top:6px;width:100%;border:1.5px solid var(--gray-300);border-radius:8px;padding:10px;">
+        <button class="btn-secondary" style="margin-top:8px;" onclick="addAddendum('${c.id}')">Add addendum</button>
+      </div>`;
+    }
+    if(currentAccount.comp_access && !c.voided){
+      html+=`<div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--gray-200);">
+        <button class="btn-secondary" style="border-color:var(--red);color:var(--red);" onclick="voidCheckin('${c.id}')">Void this entry (VP/CEO only)</button>
+      </div>`;
+    }
+    roEl.innerHTML = html;
+  }
+  showStep('step-checkin');
+}
+
+async function markDiscussed(id){
+  if(!confirm('Confirm the in-person conversation happened — this releases the entry to the employee.'))return;
+  const{error} = await db.from('checkins').update({state:'discussed',discussed_at:new Date().toISOString()}).eq('id',id);
+  if(error){alert('Error: '+error.message);return;}
+  openCheckinView(id);
+}
+
+async function addAddendum(id){
+  const text = document.getElementById('addendum-text').value.trim();
+  const reason = document.getElementById('addendum-reason').value.trim();
+  if(!text||!reason){alert('Both the addendum text and a reason are required.');return;}
+  const{error} = await db.from('addendums').insert({checkin_id:id,author_id:currentAccount.id,text,reason});
+  if(error){alert('Error: '+error.message);return;}
+  openCheckinView(id);
+}
+
+async function voidCheckin(id){
+  const reason = prompt('Reason for voiding this entry (required):');
+  if(!reason || !reason.trim())return;
+  const{error} = await db.from('checkins').update({voided:true,voided_reason:reason.trim(),voided_by:currentAccount.id,voided_at:new Date().toISOString()}).eq('id',id);
+  if(error){alert('Error: '+error.message);return;}
+  openCheckinView(id);
+}
+
+// ── ON LOAD: resume an existing session if there is one ──
+(async function init(){
+  const{data:{session}} = await db.auth.getSession();
+  if(session) await afterLogin();
+})();
+</script>
+</body>
+</html>
